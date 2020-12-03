@@ -1,0 +1,7 @@
+Haskell DotF:
+  ☐ Make upstream arg to 'new' command optional (i.e. create local only if empty)
+  ☐ Consider rolling up git commands under one subcategory
+  ☐ Add support for recursive submodules in gitpkg
+  ☐ Git log command
+  ☐ Git branch command
+  ☐ Make pip and gitpkg check for existance! Don't reinstall
