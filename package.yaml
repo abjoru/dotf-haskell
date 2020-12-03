@@ -1,0 +1,57 @@
+name:                dotf-haskell
+version:             0.1.0.0
+github:              "githubuser/dotf-haskell"
+license:             BSD3
+author:              "Andreas Bjoru"
+maintainer:          "example@example.com"
+copyright:           "2020 Andreas Bjoru"
+
+extra-source-files:
+- README.md
+- ChangeLog.md
+
+# Metadata used when publishing your package
+# synopsis:            Short description of your package
+# category:            Web
+
+# To avoid duplicated efforts in documentation and dealing with the
+# complications of embedding Haddock markup inside cabal files, it is
+# common to point users to the README.md file.
+description:         Please see the README on GitHub at <https://github.com/githubuser/dotf-haskell#readme>
+
+dependencies:
+- base >= 4.7 && < 5
+
+library:
+  source-dirs: src
+  dependencies:
+    - process
+    - directory
+    - filepath
+    - text
+    - yaml
+    - bytestring
+    - optparse-applicative
+
+executables:
+  dotf-haskell-exe:
+    main:                Main.hs
+    source-dirs:         app
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - dotf-haskell
+    - optparse-applicative
+
+tests:
+  dotf-haskell-test:
+    main:                Spec.hs
+    source-dirs:         test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - dotf-haskell
