@@ -107,4 +107,3 @@ jobs:
           asset_path: ${{ env.BINARY_PATH }}
           asset_name: dotf-${{ steps.tag.outputs.tag }}-${{ runner.os }}-ghc-${{ matrix.ghc }}
           asset_content_type: application/octet-stream
-        u
