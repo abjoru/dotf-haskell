@@ -1,0 +1,10 @@
+cradle:
+  stack:
+    - path: "./src"
+      component: "dotf-haskell:lib"
+
+    - path: "./app/Main.hs"
+      component: "dotf-haskell:exe:hdotf"
+
+    - path: "./app/Paths_dotf_haskell.hs"
+      component: "dotf-haskell:exe:hdotf"
