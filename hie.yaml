@@ -4,7 +4,7 @@ cradle:
       component: "dotf-haskell:lib"
 
     - path: "./app/Main.hs"
-      component: "dotf-haskell:exe:hdotf"
+      component: "dotf-haskell:exe:dotf"
 
     - path: "./app/Paths_dotf_haskell.hs"
-      component: "dotf-haskell:exe:hdotf"
+      component: "dotf-haskell:exe:dotf"
