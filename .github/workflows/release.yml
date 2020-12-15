@@ -85,7 +85,8 @@ jobs:
           cabal install exe:dotf --install-method=copy --overwrite-policy=always --installdir=dist
       
       - name: Set binary path name
-        run: echo "::set-env name=BINARY_PATH::./dist/dotf"
+        run: echo "BINARY_PATH=./dist/dotf" >> $GITHUB_ENV
+        #run: echo "::set-env name=BINARY_PATH::./dist/dotf"
         
       - name: Compress binary
         uses: svenstaro/upx-action@2.0.1
