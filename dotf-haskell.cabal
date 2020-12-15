@@ -4,15 +4,15 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 3aa9d453d94795cbe03fc8505939136826bd2b7a5f452811a2ceae94944e8bd2
+-- hash: ea1c3ec082e30bad373cb0f560f18b502066b6fece0c3dd35e67bca2e30f3dfc
 
 name:           dotf-haskell
 version:        0.1.0.0
-description:    Please see the README on GitHub at <https://github.com/githubuser/dotf-haskell#readme>
-homepage:       https://github.com/githubuser/dotf-haskell#readme
-bug-reports:    https://github.com/githubuser/dotf-haskell/issues
+description:    Please see the README on GitHub at <https://github.com/abjoru/dotf-haskell#readme>
+homepage:       https://github.com/abjoru/dotf-haskell#readme
+bug-reports:    https://github.com/abjoru/dotf-haskell/issues
 author:         Andreas Bjoru
-maintainer:     example@example.com
+maintainer:     andreas@bjoru.com
 copyright:      2020 Andreas Bjoru
 license:        BSD3
 license-file:   LICENSE
@@ -23,7 +23,7 @@ extra-source-files:
 
 source-repository head
   type: git
-  location: https://github.com/githubuser/dotf-haskell
+  location: https://github.com/abjoru/dotf-haskell
 
 library
   exposed-modules:

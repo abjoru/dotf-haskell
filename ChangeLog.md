@@ -1,4 +1,4 @@
-# Changelog for dotf-haskell
+# Changelog for DotF
 
 ## Unreleased changes
 
