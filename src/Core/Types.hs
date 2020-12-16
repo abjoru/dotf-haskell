@@ -74,6 +74,7 @@ data GitPkg = GitPkg
   { gitName :: String
   , gitUrl :: String
   , gitBranch :: Maybe String
+  , gitSubmodules :: Bool
   , gitInstallScript :: Maybe FilePath
   , gitInstallCommand :: Maybe String
   } deriving Show
@@ -155,9 +156,10 @@ parseGitPkgs (Just (Array a)) = mapM pkg $ V.toList a
           let name   = HM.foldlWithKey' f "<unknown>" o
               url    = parseJSON $ HM.lookupDefault "<missing>" "url" o
               branch = parseJSON $ HM.lookupDefault Null "branch" o
+              submod = parseJSON $ HM.lookupDefault (Bool False) "submodules" o
               script = parseJSON $ HM.lookupDefault Null "install" o
               cmd    = parseJSON $ HM.lookupDefault Null "command" o
-          in GitPkg name <$> url <*> branch <*> script <*> cmd
+          in GitPkg name <$> url <*> branch <*> submod <*> script <*> cmd
 
         f :: String -> T.Text -> Value -> String
         f _ k Null = T.unpack k
@@ -226,7 +228,7 @@ decodeBundles c f = do
               }
 
           checkGitItem :: GitPkg -> GitPkg
-          checkGitItem g@(GitPkg _ _ _ v _) = g { gitInstallScript = checkDir v $ configDirectory c }
+          checkGitItem g@(GitPkg _ _ _ _ v _) = g { gitInstallScript = checkDir v $ configDirectory c }
 
           checkDir :: Maybe FilePath -> FilePath -> Maybe FilePath
           checkDir (Just r) b = Just $ b ++ "/" ++ r

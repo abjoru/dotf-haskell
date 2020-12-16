@@ -81,7 +81,10 @@ apt px = mkString "sudo apt install " " " "" $ pkgName <$> px
 mkGitCmds :: Env -> [GitPkg] -> [String]
 mkGitCmds (Env _ c _) gx = concat (buildCmd (gitDirectory c) <$> gx)
   where buildCmd :: FilePath -> GitPkg -> [String]
-        buildCmd d (GitPkg n u _ s c) = [[i|git clone #{u} #{d </> n}|], inst s c (d </> n)]
+        buildCmd d (GitPkg n u Nothing False s c)  = [[i|git clone #{u} #{d </> n}|], inst s c (d </> n)]
+        buildCmd d (GitPkg n u Nothing True s c)   = [[i|git clone --recurse-submodules #{u} #{d </> n}|], inst s c (d </> n)]
+        buildCmd d (GitPkg n u (Just b) False s c) = [[i|git clone -b #{b} #{u} #{d </> n}|], inst s c (d </> n)]
+        buildCmd d (GitPkg n u (Just b) True s c) = [[i|git clone --recurse-submodules -b #{b} #{u} #{d </> n}|], inst s c (d </> n)]
 
         inst :: Maybe String -> Maybe FilePath -> FilePath -> String
         inst _ (Just x) d = [i|pushd #{d} ; #{x} ; popd|]

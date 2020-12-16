@@ -107,7 +107,11 @@ defaultPkgConfig =
   \#     \# Note that a git entry should have one of 'command'
   \#     \# or 'install' options defined, otherwise you would
   \#     \# just get a clone and nothing else.
-  \#     url: 'https://github.com/test/some-git-app.git'
+  \#     url: 'https://github.com/<user>/some-git-app.git'
+  \#     \# [Optional] Checkout a specific branch.
+  \#     \# branch: some-branch
+  \#     \# [Optional] Recurse submodules for this repository.
+  \#     \# submodules: true
   \#     \# [Optional] Installation command. This command will be 
   \#     \# executed from the clone directory (i.e. local to the app)
   \#     command: 'stack install'
