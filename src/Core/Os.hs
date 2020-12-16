@@ -1,9 +1,10 @@
-{-# LANGUAGE OverloadedStrings, DeriveGeneric #-}
+{-# LANGUAGE OverloadedStrings, DeriveGeneric, QuasiQuotes #-}
 module Core.Os where
 
 import GHC.Generics
 
 import Data.Aeson
+import Data.String.Interpolate (i, __i)
 import qualified Data.ByteString.Lazy.UTF8 as BLU
 
 import Core.Types
@@ -40,8 +41,9 @@ loadInstallConfig ps c = do
 
   case rs of
     Right x -> return x
-    Left err -> error $ "Unable to load brew.yaml! :: " ++ show err
-    --return $ InstallConfig "Empty" "" []
+    Left err -> do 
+      putStrLn [i|Error reading #{installFile ps}! #{show err}|]
+      return $ InstallConfig "Empty" "" []
 
 loadDotfConfig :: IO Config
 loadDotfConfig = do

@@ -11,7 +11,7 @@ import Control.Monad
 import Data.String.Interpolate (i)
 
 import System.Process
-import System.Directory (doesPathExist)
+import System.Directory (doesDirectoryExist)
 import System.FilePath ((</>))
 
 updateSystem :: Env -> DryMode -> IO ()
@@ -27,7 +27,7 @@ mkCommands :: Env -> OsPkgs -> IO [String]
 mkCommands e osp = do
   gitPkgs <- extractGits e
 
-  return $ (mkUpdateCmd e)
+  return $ mkUpdateCmd e
         ++ (mkScriptCmds $ extractPreInstallScripts e)
         ++ (mkPkgCmds e $ extractPkgs e osp)
         ++ (mkGitCmds e gitPkgs)
@@ -92,7 +92,7 @@ mkPipCmds :: [String] -> [String]
 mkPipCmds xs = [mkString "pip install " " " "" xs]
 
 mkScriptCmds :: [FilePath] -> [String]
-mkScriptCmds xs = (\x -> "sh " ++ x) <$> xs
+mkScriptCmds xs = ("sh " ++ ) <$> xs
 
 ----------------
 -- Extractors --
@@ -101,7 +101,7 @@ mkScriptCmds xs = (\x -> "sh " ++ x) <$> xs
 -- Extract all 'new' packages.
 extractPkgs :: Env -> OsPkgs -> [Pkg]
 extractPkgs (Env _ _ ic) (OsPkgs sp _) = foldl coll [] $ bundles ic
-  where coll acc b = acc ++ (filter newPkg $ bundlePackages b)
+  where coll acc b = acc ++ filter newPkg (bundlePackages b)
         newPkg (Pkg n _ _) = n `notElem` sp
 
 -- Extract all 'non-existant' git paths
@@ -109,7 +109,7 @@ extractGits :: Env -> IO [GitPkg]
 extractGits (Env _ c ic) =
   let pkgs = foldl (\a b -> a ++ bundleGitPkgs b) [] $ bundles ic
    in filterM exists pkgs
-  where exists g = doesPathExist $ gitDirectory c </> gitName g
+  where exists g = not <$> (doesDirectoryExist $ gitDirectory c </> gitName g)
 
 -- Extract all 'new' pip packages.
 extractPips :: Env -> OsPkgs -> [String]
