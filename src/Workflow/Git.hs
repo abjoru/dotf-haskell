@@ -15,7 +15,7 @@ gith :: FilePath -> FilePath -> String -> String
 gith a b c = [i|git --git-dir=#{a} --work-tree=#{b} #{c}|]
 
 gitRawWorkflow :: Env -> DryMode -> String -> IO ()
-gitRawWorkflow (Env _ c _) d s = getHomeDirectory >>= exec >> pure ()
+gitRawWorkflow (Env _ c _) _ s = getHomeDirectory >>= exec >> pure ()
   where exec p = system $ gith (repoDirectory c) p s
 
 gitNewWorkflow :: Env -> DryMode -> Maybe String -> IO ()
@@ -26,9 +26,16 @@ gitNewWorkflow (Env _ c _) d (Just u) = do
       c2 = gith (repoDirectory c) home "checkout"
       c3 = gith (repoDirectory c) home "config --local status.showUntrackedFiles no"
   execute exists [c1, c2, c3]
-    where execute True _ = putStrLn [i|Local repo directory exists: #{repoDirectory c}|]
-          execute False cmds = mapM_ (runCmd d) cmds
-gitNewWorkflow (Env _ c _) d _ = putStrLn "NOT IMPLEMENTED!"
+  where execute True _ = putStrLn [i|Local repo directory exists: #{repoDirectory c}|]
+        execute False cmds = mapM_ (runCmd d) cmds
+gitNewWorkflow (Env _ c _) d _ = do
+  home <- getHomeDirectory
+  exists <- doesPathExist $ repoDirectory c
+  let c1 = [i|git init --bare #{repoDirectory c}|]
+      c2 = gith (repoDirectory c) home "config --local status.showUntrackedFiles no"
+  execute exists [c1, c2]
+  where execute True _ = putStrLn [i|Local repo directory exists: #{repoDirectory c}|]
+        execute False cmds = mapM_ (runCmd d) cmds
 
 gitStatusWorkflow :: Env -> IO ()
 gitStatusWorkflow (Env _ c _) = getHomeDirectory >>= exec >> pure ()
@@ -56,7 +63,7 @@ gitCheckoutWorflow (Env _ c _) d b = getHomeDirectory >>= exec
         exec p = runCmd d $ gith (repoDirectory c) p [i|checkout #{b}|]
 
 gitAddWorkflow :: Env -> DryMode -> AddMode -> IO ()
-gitAddWorkflow e d AddAll = gitc e "add -u" >>= system >> pure ()
+gitAddWorkflow e _ AddAll = gitc e "add -u" >>= system >> pure ()
 gitAddWorkflow (Env _ c _) d (AddFiles xs) = getHomeDirectory >>= exec
   where exec p = runCmd d $ gith (repoDirectory c) p $ mkString "add " " " "" xs
 
@@ -76,12 +83,10 @@ gitPullWorkflow e = gitc e "pull" >>= system >> pure ()
 gitShowFilesWorkflow :: Env -> ListOps -> IO ()
 gitShowFilesWorkflow e (ListOps Untracked dir) = do
   cmd <- gitc e $ "ls-files --others --exclude-standard " ++ dir 
-  res <- system cmd
-  return ()
+  system cmd >> pure ()
 gitShowFilesWorkflow e (ListOps Tracked dir) = do
   cmd <- gitc e $ "ls-files " ++ dir
-  res <- system cmd
-  return ()
+  system cmd >> pure ()
 
 gitSquashWorkflow :: Env -> DryMode -> Int -> IO ()
 gitSquashWorkflow (Env _ c _) d n = getHomeDirectory >>= exec

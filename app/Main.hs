@@ -5,7 +5,7 @@ import Core.Types
 import Core.Format
 import Core.Options
 
-import Data.List (intersect, isInfixOf)
+import Data.List (isInfixOf)
 
 import Workflow.Git
 import Workflow.Input
@@ -16,13 +16,9 @@ import System.Directory
 import System.FilePath
 import System.Environment
 
-hasComplCmd :: [String] -> Bool
-hasComplCmd = any (isInfixOf "-completion-")
-
 main :: IO ()
 main = do
   args <- getArgs
-
   if any (isInfixOf "-completion-") args
      then parseOptions >> pure ()
      else bootstrap
