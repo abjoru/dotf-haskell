@@ -4,7 +4,7 @@ module Core.Os where
 import GHC.Generics
 
 import Data.Aeson
-import Data.String.Interpolate (i, __i)
+import Data.String.Interpolate (i)
 import qualified Data.ByteString.Lazy.UTF8 as BLU
 
 import Core.Types
@@ -14,10 +14,10 @@ import System.Process
 import System.Directory (getXdgDirectory, XdgDirectory(..))
 import System.FilePath ((</>))
 
-installFile :: PkgSystem -> String
-installFile Pacman   = "pacman.yaml"
-installFile Homebrew = "brew.yaml"
-installFile Apt      = "apt.yaml"
+installFilename :: PkgSystem -> String
+installFilename Pacman   = "pacman.yaml"
+installFilename Homebrew = "brew.yaml"
+installFilename Apt      = "apt.yaml"
 
 -- Attempt to resolve the local package system
 -- Errors if no supported package system found!
@@ -37,12 +37,12 @@ findPackageSystem = do
 -- Errors if install config for package system was not found!
 loadInstallConfig :: PkgSystem -> Config -> IO InstallConfig
 loadInstallConfig ps c = do
-  rs <- decodeBundles c $ configDirectory c </> installFile ps
+  rs <- decodeBundles c $ configDirectory c </> installFilename ps
 
   case rs of
     Right x -> return x
     Left err -> do 
-      putStrLn [i|Error reading #{installFile ps}! #{show err}|]
+      putStrLn [i|Error reading #{installFilename ps}! #{show err}|]
       return $ InstallConfig "Empty" "" []
 
 loadDotfConfig :: IO Config
@@ -57,8 +57,20 @@ loadDotfConfig = do
 loadOsPackages :: PkgSystem -> IO OsPkgs
 loadOsPackages ps = do
   pkgs <- listOsPkgs ps
-  pips <- listPipPkgs
-  return $ OsPkgs pkgs pips
+  json <- readProcess "pip" ["list", "--format", "json"] []
+  OsPkgs pkgs <$> case (decode (BLU.fromString json) :: Maybe PipList) of
+    Just (PipList xs) -> return $ pipName <$> xs
+    _                 -> pure []
+  where listOsPkgs Pacman = map f . lines <$> readProcess "pacman" ["-Q"] []
+        listOsPkgs Apt    = map f . lines <$> readProcess "apt" ["list", "--installed"] []
+        listOsPkgs Homebrew = do
+          std  <- foldl co [] . lines <$> readProcess "brew" ["list", "--formula"] []
+          cask <- foldl co [] . lines <$> readProcess "brew" ["list", "--cask"] []
+          return $ std ++ cask
+
+        f line = head $ words line
+
+        co acc line = acc ++ words line
 
 --------------------
 -- Shell Commands --
@@ -83,43 +95,3 @@ which arg = do
   case x of
     ExitSuccess   -> pure $ Just arg
     ExitFailure _ -> pure Nothing
-
------------------
--- OS Packages --
------------------
-
-listOsPkgs :: PkgSystem -> IO [String]
-listOsPkgs Pacman = map f . lines <$> readProcess "pacman" ["-Q"] []
-  where f line = head $ words line
-listOsPkgs Homebrew = do
-  std  <- listStd
-  cask <- listCask
-  return $ std ++ cask
-  where listStd = foldl f [] . lines <$> readProcess "brew" ["list", "--formula"] []
-        listCask = foldl f [] . lines <$> readProcess "brew" ["list", "--cask"] []
-        f acc l = acc ++ words l
-listOsPkgs Apt = map f . lines <$> readProcess "apt" ["list", "--installed"] []
-  where f line = head $ words line
-
-------------------
--- Pip Packages --
-------------------
-
-data PipList = PipList [PipPkg]
-  deriving (Show, Generic)
-
-instance FromJSON PipList
-
-data PipPkg = PipPkg { name :: String, version :: String }
-  deriving (Show, Generic)
-
-instance FromJSON PipPkg
-
-listPipPkgs :: IO [String]
-listPipPkgs = do
-  json <- readProcess "pip" ["list", "--format", "json"] ""
-  let bs = BLU.fromString json
-  case (decode bs :: Maybe PipList) of
-    Just (PipList xs) -> return $ f <$> xs
-    Nothing -> pure []
-  where f (PipPkg n _) = n

@@ -4,30 +4,41 @@ import Core.Options.Types
 
 import Options.Applicative
 
+-----------------------------
+-- Parsers for CMD options --
+-----------------------------
+
+-- Parser for the root `Options` type
 parserOptions :: Parser Options
 parserOptions = Options <$> parserDryMode <*> parserCommand
 
+-- Parser for the `DryMode` flag
 parserDryMode :: Parser DryMode
 parserDryMode = flag Normal Dry (  long "dryrun"
                                 <> short 'd'
                                 <> help "Enable dry run"
                                 )
 
+-- Parser for the `GitMode` flag
 parserGitMode :: Parser GitMode
 parserGitMode = flag Tracked Untracked (  long "untracked"
                                        <> short 'u'
                                        <> help "Show untracked files"
                                        )
 
+-- Parser for the `AddMode` flag
 parserAddMode :: Parser AddMode
 parserAddMode = parserAddFiles <|> parserAddAll
 
+-- Parser for the `AddFiles` option
 parserAddFiles :: Parser AddMode
 parserAddFiles = AddFiles <$> some (argument str (metavar "FILES..."))
 
+-- Parser for the `AddAll` option
 parserAddAll :: Parser AddMode
 parserAddAll = flag' AddAll (long "addall" <> short 'a' <> help "Add all dirty files")
 
+-- Parser for the `Command` sub-command
 parserCommand :: Parser Command
 parserCommand = hsubparser
   (  command "new" (info parserNew (progDesc "Create (or attach) new git bare repository"))
@@ -47,11 +58,13 @@ parserCommand = hsubparser
   <> command "gen" (info (pure Generate) (progDesc "Generate contents"))
   )
 
+-- Parser for the `New` command
 parserNew :: Parser Command
 parserNew = New <$> fmap check parserUpstreamOpt
   where check "" = Nothing
         check xa = Just xa
 
+-- Parser for the 'upstream' option for the `New` command
 parserUpstreamOpt :: Parser String
 parserUpstreamOpt = strOption (  long "upstream"
                               <> short 'u'
@@ -60,9 +73,11 @@ parserUpstreamOpt = strOption (  long "upstream"
                               <> help "Upstream GIT bare repository URL to attach to"
                               )
 
+-- Parser for the `List` (show) command
 parserList :: Parser Command
 parserList = List <$> parserListCmd
 
+-- Parser for sub-commands of `List`
 parserListCmd :: Parser ListCmds
 parserListCmd = hsubparser
   (  command "files" (info parserListFiles (progDesc "Show tracked/untracked files in directory"))
@@ -72,9 +87,11 @@ parserListCmd = hsubparser
   <> command "log" (info (pure ListCommitLog) (progDesc "Show short commit log"))
   )
 
+-- Parser for `ListFiles` command
 parserListFiles :: Parser ListCmds
 parserListFiles = ListFiles <$> parserListOps
 
+-- Parser for `ListOps` options
 parserListOps :: Parser ListOps
 parserListOps = ListOps <$> parserGitMode
                         <*> argument str (metavar "DIR" <> value ".")

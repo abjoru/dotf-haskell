@@ -1,11 +1,14 @@
 {-# LANGUAGE OverloadedStrings, QuasiQuotes #-}
 module Core.Utils where
 
+import Core.Types
+
 import Data.String.Interpolate (i)
 
 import System.Process
 import System.Exit (ExitCode(..), exitSuccess)
 import System.Directory --(getXdgDirectory, XdgDirectory(XdgConfig))
+import System.FilePath ((</>))
 
 import Control.Monad
 
@@ -40,3 +43,12 @@ removeFiles xs = forM_ xs removeIfExists
           if exists
              then removeFile f
              else pure ()
+
+-- Make paths absolute
+-- If starts with '/', then return path (already absolute)
+-- If starts with '~', expand to $home
+-- Else put config directory as base path
+toAbsolute :: Config -> FilePath -> FilePath
+toAbsolute _ f@('/':_) = f
+toAbsolute c ('~':r) = homeDirectory c ++ r
+toAbsolute c f = configDirectory c </> f

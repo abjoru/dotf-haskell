@@ -7,16 +7,15 @@ import Core.Options
 
 import Data.String.Interpolate (i)
 
-import System.Exit
 import System.Directory
 import System.Process (system)
 
-gith :: FilePath -> FilePath -> String -> String
-gith a b c = [i|git --git-dir=#{a} --work-tree=#{b} #{c}|]
+-------------------
+-- Git Workflows --
+-------------------
 
 gitRawWorkflow :: Env -> DryMode -> String -> IO ()
-gitRawWorkflow (Env _ c _) _ s = getHomeDirectory >>= exec >> pure ()
-  where exec p = system $ gith (repoDirectory c) p s
+gitRawWorkflow = gitExec
 
 gitNewWorkflow :: Env -> DryMode -> Maybe String -> IO ()
 gitNewWorkflow (Env _ c _) d (Just u) = do
@@ -38,70 +37,61 @@ gitNewWorkflow (Env _ c _) d _ = do
         execute False cmds = mapM_ (runCmd d) cmds
 
 gitStatusWorkflow :: Env -> IO ()
-gitStatusWorkflow (Env _ c _) = getHomeDirectory >>= exec >> pure ()
-  where exec :: FilePath -> IO ExitCode
-        exec p = system $ gith (repoDirectory c) p "status -sb"
+gitStatusWorkflow = gitExecNormal "status -sb"
 
 gitDiffWorkflow :: Env -> IO ()
-gitDiffWorkflow (Env _ c _) = getHomeDirectory >>= exec >> pure ()
-  where exec :: FilePath -> IO ExitCode
-        exec p = system $ gith (repoDirectory c) p "diff"
+gitDiffWorkflow = gitExecNormal "diff"
 
 gitMergeWorkflow :: Env -> DryMode -> String -> IO ()
-gitMergeWorkflow (Env _ c _) d b = getHomeDirectory >>= exec
-  where exec :: FilePath -> IO ()
-        exec p = runCmd d $ gith (repoDirectory c) p [i|merge #{b}|]
+gitMergeWorkflow e d b = gitExec e d [i|merge #{b}|]
 
 gitWipWorkflow :: Env -> DryMode -> String -> IO ()
-gitWipWorkflow (Env _ c _) d b = getHomeDirectory >>= exec
-  where exec :: FilePath -> IO ()
-        exec p = runCmd d $ gith (repoDirectory c) p [i|checkout -b #{b}|]
+gitWipWorkflow e d b = gitExec e d [i|checkout -b #{b}|]
 
 gitCheckoutWorflow :: Env -> DryMode -> String -> IO ()
-gitCheckoutWorflow (Env _ c _) d b = getHomeDirectory >>= exec
-  where exec :: FilePath -> IO ()
-        exec p = runCmd d $ gith (repoDirectory c) p [i|checkout #{b}|]
+gitCheckoutWorflow e d b = gitExec e d [i|checkout #{b}|]
 
 gitAddWorkflow :: Env -> DryMode -> AddMode -> IO ()
-gitAddWorkflow e _ AddAll = gitc e "add -u" >>= system >> pure ()
-gitAddWorkflow (Env _ c _) d (AddFiles xs) = getHomeDirectory >>= exec
-  where exec p = runCmd d $ gith (repoDirectory c) p $ mkString "add " " " "" xs
+gitAddWorkflow e d AddAll = gitExec e d "add -u"
+gitAddWorkflow e d (AddFiles xs) = gitExec e d $ mkString "add " " " "" xs
 
 gitCommitWorkflow :: Env -> DryMode -> String -> IO ()
-gitCommitWorkflow (Env _ c _) d m = getHomeDirectory >>= exec
-  where exec :: FilePath -> IO ()
-        exec p = runCmd d $ gith (repoDirectory c) p ("commit -m '" ++ m ++ "'")
+gitCommitWorkflow e d m = gitExec e d [i|commit -m '#{m}'|]
 
 gitPushWorkflow :: Env -> DryMode -> IO ()
-gitPushWorkflow (Env _ c _) d = getHomeDirectory >>= exec
-  where exec :: FilePath -> IO ()
-        exec p = runCmd d $ gith (repoDirectory c) p "push"
+gitPushWorkflow e d = gitExec e d "push"
 
 gitPullWorkflow :: Env -> IO ()
-gitPullWorkflow e = gitc e "pull" >>= system >> pure ()
+gitPullWorkflow = gitExecNormal "pull"
 
 gitShowFilesWorkflow :: Env -> ListOps -> IO ()
-gitShowFilesWorkflow e (ListOps Untracked dir) = do
-  cmd <- gitc e $ "ls-files --others --exclude-standard " ++ dir 
-  system cmd >> pure ()
-gitShowFilesWorkflow e (ListOps Tracked dir) = do
-  cmd <- gitc e $ "ls-files " ++ dir
-  system cmd >> pure ()
+gitShowFilesWorkflow e (ListOps Untracked d) = gitExec e Normal [i|ls-files --others --exclude-standard #{d}|]
+gitShowFilesWorkflow e (ListOps Tracked d)   = gitExec e Normal [i|ls-files #{d}|]
 
 gitSquashWorkflow :: Env -> DryMode -> Int -> IO ()
-gitSquashWorkflow (Env _ c _) d n = getHomeDirectory >>= exec
-  where exec p = runCmd d $ gith (repoDirectory c) p ("rebase -i HEAD~" ++ show n)
+gitSquashWorkflow e d n = gitExec e d [i|rebase -i HEAD~#{n}|]
 
 gitShowCommitLogWorkflow :: Env -> IO ()
-gitShowCommitLogWorkflow e = gitc e "log --oneline" >>= system >> pure ()
+gitShowCommitLogWorkflow e = gitExec e Normal "log --oneline"
 
 gitShowBranchWorkflow :: Env -> IO ()
-gitShowBranchWorkflow e = gitc e "branch -a" >>= system >> pure ()
+gitShowBranchWorkflow = gitExecNormal "branch -a"
 
-gitc :: Env -> String -> IO String
-gitc (Env _ c _) cmd = do
-  h <- getHomeDirectory
-  return $ gith (repoDirectory c) h cmd
+-----------
+-- Utils --
+-----------
+
+gitExecNormal :: String -> Env -> IO ()
+gitExecNormal cmd env = gitExec env Normal cmd
+
+gitExec :: Env -> DryMode -> String -> IO ()
+gitExec env dry cmd = gitc env cmd >>= runCmd dry
+  where gitc (Env _ c _) cmd = do
+          h <- getHomeDirectory
+          return $ gith (repoDirectory c) h cmd
+
+gith :: FilePath -> FilePath -> String -> String
+gith a b c = [i|git --git-dir=#{a} --work-tree=#{b} #{c}|]
 
 runCmd :: DryMode -> String -> IO ()
 runCmd Dry cmd = putStrLn cmd

@@ -3,7 +3,6 @@ module Core.Format where
 
 import Core.Types
 
-import Data.Yaml
 import Data.Char (toLower)
 import Data.String.Interpolate (__i)
 
@@ -23,7 +22,7 @@ mkString pre s post (x:xs) = pre ++ x ++ s ++ sep s xs ++ post
 -- TODO Move to templates, or something
 
 defaultConfig :: Config -> String
-defaultConfig (Config h gd _ rd _ _ _ _) =
+defaultConfig (Config h gd _ _ rd _) =
   [__i|\# Default DotF Configuration
 
   \#\#\#\#\#\#\#\#\#\#\#

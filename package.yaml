@@ -38,7 +38,7 @@ library:
     - optparse-applicative
     - string-interpolate
     - hostname
-    - regex-tdfa
+    - regex-pcre
 
 executables:
   dotf:

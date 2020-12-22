@@ -33,6 +33,7 @@ data Command = New (Maybe String)
              | Generate
              deriving Show
 
+-- List sub-commands (i.e. show options)
 data ListCmds = ListFiles ListOps
               | ListBundles
               | ListPkgs

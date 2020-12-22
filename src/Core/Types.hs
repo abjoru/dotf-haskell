@@ -1,5 +1,7 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, DeriveGeneric #-}
 module Core.Types where
+
+import GHC.Generics
 
 import Data.Yaml
 import qualified Data.Text as T
@@ -7,6 +9,7 @@ import qualified Data.HashMap.Strict as HM
 import qualified Data.Vector as V
 
 import System.Directory
+import System.FilePath ((</>))
 
 data PkgSystem = Pacman | Homebrew | Apt
 
@@ -19,12 +22,17 @@ data Env = Env
 data Config = Config 
   { headless :: Bool
   , gitDirectory :: FilePath    -- target directory for git pkg clones (default: ~/.local/share)
+  , homeDirectory :: FilePath   -- user home directory
   , configDirectory :: FilePath -- data directory for DotF (default: ~/.config/dotf)
   , repoDirectory :: FilePath   -- git bare repo directory for dotfiles (default: ~/.dotf)
-  , htmlHeader :: Maybe FilePath
-  , htmlFooter :: Maybe FilePath
-  , htmlCss :: Maybe FilePath
-  , htmlLinks :: Maybe FilePath
+  , homepage :: Maybe Homepage  -- Optional homepage definition
+  } deriving Show
+
+data Homepage = Homepage
+  { header :: FilePath
+  , footer :: FilePath
+  , links :: FilePath
+  , css :: FilePath
   } deriving Show
 
 data Groups = Groups [Group]
@@ -79,7 +87,13 @@ data GitPkg = GitPkg
   , gitInstallCommand :: Maybe String
   } deriving Show
 
+data PipList = PipList [PipPkg]
+  deriving (Show, Generic)
 
+data PipPkg = PipPkg
+  { pipName :: String
+  , pipVersion :: String
+  } deriving (Show, Generic)
 
 ---------------
 -- Instances --
@@ -89,13 +103,19 @@ instance FromJSON Config where
   parseJSON (Object o) = Config
     <$> o .: "headless"
     <*> o .: "git-target-dir"
+    <*> pure "~/"
     <*> pure "~/.config/dotf" -- static dir
     <*> o .: "dotf-repo-dir"
-    <*> o .:? "homepage-css"
-    <*> o .:? "homepage-header"
-    <*> o .:? "homepage-footer"
-    <*> o .:? "homepage-links"
+    <*> o .:? "homepage"
   parseJSON _ = fail "Expected Object for Config!"
+
+instance FromJSON Homepage where
+  parseJSON (Object o) = Homepage
+    <$> o .: "header"
+    <*> o .: "footer"
+    <*> o .: "links"
+    <*> o .: "css"
+  parseJSON _ = fail "Expected Object for Homepage"
 
 instance FromJSON InstallConfig where
   parseJSON (Object o) = case (icName, icDesc) of
@@ -106,8 +126,12 @@ instance FromJSON InstallConfig where
           bundles = parseBundles o
 
 instance FromJSON Groups where
-  parseJSON (Object o) = Groups <$> parseGroups o
+  parseJSON (Array xs) = Groups <$> mapM parseGroup (V.toList xs)
   parseJSON _          = fail "Expected Object for Links"
+
+instance FromJSON PipList
+
+instance FromJSON PipPkg
 
 --------------------
 -- Custom Parsers --
@@ -170,19 +194,18 @@ parsePipPkgs :: Maybe Value -> Parser [String]
 parsePipPkgs (Just a@(Array _)) = parseJSON a
 parsePipPkgs _ = return []
 
-parseGroups :: HM.HashMap T.Text Value -> Parser [Group]
-parseGroups m = mapM pGroup $ HM.toList m
-  where pGroup :: (T.Text, Value) -> Parser Group
-        pGroup (_, Object o) = 
-          let name = parseJSON $ HM.lookupDefault "<unknown>" "name" o
-              filter = parseJSON $ HM.lookupDefault Null "host-filter" o
-              links = parseLinks $ HM.lookup "links" o
-           in Group <$> name <*> filter <*> links
+parseGroup :: Value -> Parser Group
+parseGroup (Object o) = 
+  let name = parseJSON $ HM.lookupDefault "<unknown>" "name" o
+      filter = parseJSON $ HM.lookupDefault Null "host-filter" o
+      links = parseLinks $ HM.lookup "links" o
+   in Group <$> name <*> filter <*> links
+parseGroup _ = fail "Expected Object for Group"
 
 parseLinks :: Maybe Value -> Parser [Link]
 parseLinks (Just (Array a)) = mapM link $ V.toList a
   where link :: Value -> Parser Link
-        link (Object o) = 
+        link (Object o) =
           let id   = HM.foldlWithKey' f "<unknown>" o
               name = parseJSON $ HM.lookupDefault "<unknown>" "name" o
               url  = parseJSON $ HM.lookupDefault "" "url" o
@@ -191,7 +214,6 @@ parseLinks (Just (Array a)) = mapM link $ V.toList a
         f :: String -> T.Text -> Value -> String
         f _ k Null = T.unpack k
         f a _ _    = a
-              
 
 --------------
 -- Decoders --
@@ -200,17 +222,20 @@ parseLinks (Just (Array a)) = mapM link $ V.toList a
 decodeConfig :: FilePath -> IO (Either ParseException Config)
 decodeConfig f = do
   home <- getHomeDirectory
+  adir <- getXdgDirectory XdgConfig "dotf"
   cfg  <- decodeFileEither f
-  return $ checkConfig cfg home
-    where checkConfig (Right c) h = Right $ c { gitDirectory = checkDir h $ gitDirectory c
-                                              , configDirectory = checkDir h $ configDirectory c
-                                              , repoDirectory = checkDir h $ repoDirectory c
-                                              }
-          checkConfig other _ = other
+  return $ checkConfig cfg home adir
+    where checkConfig (Right c) h a = Right $ c { gitDirectory = checkDir h a $ gitDirectory c
+                                                , homeDirectory = h
+                                                , configDirectory = a
+                                                , repoDirectory = checkDir h a $ repoDirectory c
+                                                }
+          checkConfig other _ _ = other
 
-          checkDir :: FilePath -> FilePath -> FilePath
-          checkDir h ('~':rest) = h ++ rest
-          checkDir _ other      = other
+          checkDir :: FilePath -> FilePath -> FilePath -> FilePath
+          checkDir _ _ f@('/':_)  = f
+          checkDir h _ ('~':rest) = h ++ rest
+          checkDir _ a other      = a </> other
 
 decodeBundles :: Config -> FilePath -> IO (Either ParseException InstallConfig)
 decodeBundles c f = do
@@ -221,18 +246,18 @@ decodeBundles c f = do
 
           checkBundle :: Bundle -> Bundle
           checkBundle b@(Bundle _ _ _ g _ f1 f2 f3) = 
-            b { bundleScript = checkDir f1 $ configDirectory c
-              , bundlePreInstall = checkDir f2 $ configDirectory c
-              , bundlePostInstall = checkDir f3 $ configDirectory c
+            b { bundleScript = checkDir f1 c
+              , bundlePreInstall = checkDir f2 c
+              , bundlePostInstall = checkDir f3 c
               , bundleGitPkgs = map checkGitItem g
               }
 
           checkGitItem :: GitPkg -> GitPkg
-          checkGitItem g@(GitPkg _ _ _ _ v _) = g { gitInstallScript = checkDir v $ configDirectory c }
+          checkGitItem g@(GitPkg _ _ _ _ v _) = g { gitInstallScript = checkDir v c }
 
-          checkDir :: Maybe FilePath -> FilePath -> Maybe FilePath
-          checkDir (Just r) b = Just $ b ++ "/" ++ r
-          checkDir x _ = x
+          checkDir (Just f@('/':_)) _ = Just f
+          checkDir (Just ('~':r)) c   = Just (homeDirectory c ++ r)
+          checkDir (Just r) c         = Just (configDirectory c </> r)
 
 decodeGroups :: FilePath -> IO (Either ParseException Groups)
 decodeGroups = decodeFileEither

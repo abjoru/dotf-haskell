@@ -8,6 +8,7 @@ import Core.Options
 import Data.List (isInfixOf)
 
 import Workflow.Git
+import Workflow.Gen
 import Workflow.Input
 import Workflow.System
 import Workflow.Updates
@@ -48,7 +49,7 @@ mkConfig fp psys = do
   cfg <- inputBootstrap
 
   let configFile = fp </> "dotf.yaml"
-      exampleBuild = fp </> ("example-" ++ installFile psys)
+      exampleBuild = fp </> ("example-" ++ installFilename psys)
 
   -- Write initial configs
   createDirectoryIfMissing True fp
@@ -91,6 +92,7 @@ run psys conf = do
     Options _ (List ListPkgs)      -> systemShowPackagesWorkflow env
     Options _ (List (ListFiles f)) -> gitShowFilesWorkflow env f
     Options _ (List ListCommitLog) -> gitShowCommitLogWorkflow env
+    Options _ Generate             -> genHomepage $ config env
 
     -- Debug fallthrough
-    xs -> print "Not Implemented!" >> print xs
+    --xs -> print "Not Implemented!" >> print xs

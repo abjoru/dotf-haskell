@@ -1,3 +1,4 @@
+{-# LANGUAGE QuasiQuotes #-}
 module Workflow.Gen where
 
 import Core.Types
@@ -5,53 +6,63 @@ import Core.Format
 import Core.Utils
 
 import Data.Yaml
+import Data.String.Interpolate (i, __i)
 
 import System.Directory (createDirectoryIfMissing, getXdgDirectory, XdgDirectory(XdgCache))
 import System.FilePath ((</>))
 
-import Text.Regex.TDFA
+import Text.Regex.PCRE
 
 import Network.HostName
 
 genHomepage :: Config -> IO ()
-genHomepage (Config _ _ _ _ c (Just h) (Just f) (Just l)) = do
+genHomepage c@(Config _ _ _ d _ (Just hp)) = do
   dest <- getXdgDirectory XdgCache "dotf"
   host <- getHostName
-  head <- readFile h
-  foot <- readFile f
-  cont <- mkLinks host <$> decodeGroups l
-  mcss <- maybe (pure Nothing) load c
+  head <- readFile $ toAbsolute c (header hp)
+  foot <- readFile $ toAbsolute c (footer hp)
+  css  <- readFile $ toAbsolute c (css hp)
+  cont <- mkGroups host <$> decodeGroups (toAbsolute c (links hp))
 
-  -- create dirs & remove old files if neccessary
+  -- remove the old stuff
+  putStrLn [i|Checking path #{dest}...|]
   createDirectoryIfMissing True dest
-  removeFiles [dest </> "index.html", dest </> "homepage.css"]
+  removeFiles [dest </> "homepage.html", dest </> "homepage.css"]
 
-  writeFile (dest </> "index.html") $ head ++ cont ++ foot
-  writeCss (dest </> "homepage.css") mcss
-    where load :: FilePath -> IO (Maybe String)
-          load f = Just <$> readFile f
+  -- write the new stuff
+  putStrLn "Assembling and writing homepage..."
+  writeFile (dest </> "homepage.html") $ head ++ cont ++ foot
+  writeFile (dest </> "homepage.css") css
+  putStrLn [i|Homepage written to #{dest </> "homepage.html"}|]
+genHomepage _ = pure ()
 
-          writeCss :: FilePath -> Maybe String -> IO ()
-          writeCss p (Just x) = writeFile p x
-          writeCss _ _        = pure ()
-genHomepage _ = return ()
+-----------
+-- Utils --
+-----------
 
-mkLinks :: HostName -> Either ParseException Groups -> String
-mkLinks host (Right (Groups gs)) = foldl (build host) "" gs
+mkGroups :: HostName -> Either ParseException Groups -> String
+mkGroups host (Right (Groups gs)) = foldl (build host) "" gs
   where build :: HostName -> String -> Group -> String
         build h acc (Group n f xs) = 
           if checkHost h f
-             then acc ++ pre h ++ buildLinks xs ++ post
+             then acc ++ mkLinks n xs
              else acc
+mkGroups _ (Left err) = error $ "Unable to load links: " ++ show err
 
-        checkHost :: HostName -> Maybe String -> Bool
-        checkHost h (Just f) = h =~ f :: Bool
-        checkHost _ _        = True
+mkLinks :: String -> [Link] -> String
+mkLinks n xs = mkString (mkPre n) "\n" mkPost $ map mkLink xs
+  where mkPre :: String -> String
+        mkPre n = [__i|<div class="bookmark-set">
+                        <div class="bookmark-title">#{n}</div>
+                        <div class="bookmark-inner-container">
+                      |]
 
-        buildLinks :: [Link] -> String
-        buildLinks xs = mkString "\n" "\n" "\n" $ map f xs
-          where f (Link _ n u) = "<a class='bookmark' href='" ++ u ++ "' target='_blank'>" ++ n ++ "</a>"
+        mkPost = "</div>\n</div>\n"
 
-        pre n = "\n<div class='bookmark-set'>\n<div class='bookmark-title'>" ++ n ++ "</div>\n<div class='bookmark-inner-container'>"
-        post  = "</div>\n</div>\n"
-mkLinks _ (Left err) = error $ "Unable to load links: " ++ show err
+mkLink :: Link -> String
+mkLink (Link _ n u) = [i|<a class="bookmark" href="#{u}" target="_blank">#{n}</a>|]
+
+-- Check hostname against optional regex pattern
+checkHost :: HostName -> Maybe String -> Bool
+checkHost h (Just s) = h =~ s :: Bool
+checkHost _ _        = True

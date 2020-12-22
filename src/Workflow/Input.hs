@@ -47,4 +47,4 @@ inputBootstrap = do
   ag <- dPath dataPath $ "\n" ++ [i|2. Where do you want to store Git cloned packages? (#{dataPath})|]
   ar <- dPath barePath $ "\n" ++ [i|3. Where do you want your Git bare repo config to reside? (#{barePath})|]
 
-  return $ Config ah ag d ar Nothing Nothing Nothing Nothing
+  return $ Config ah ag h d ar Nothing

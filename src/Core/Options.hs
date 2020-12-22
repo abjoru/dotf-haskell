@@ -20,6 +20,10 @@ import Options.Applicative
 
 import Data.String.Interpolate (__i)
 
+--------------------
+-- Options Module --
+--------------------
+
 parseOptions :: IO Options
 parseOptions = execParser $ info (parserOptions <**> helper)
   (fullDesc <> progDesc [__i|DotF :: The simple dot-file manager.

@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: ea1c3ec082e30bad373cb0f560f18b502066b6fece0c3dd35e67bca2e30f3dfc
+-- hash: 9203f90f9caec4b469cb2fe390789455f82a9afb9929c4ece9acd1c474385f24
 
 name:           dotf-haskell
 version:        0.1.0.0
@@ -52,7 +52,7 @@ library
     , hostname
     , optparse-applicative
     , process
-    , regex-tdfa
+    , regex-pcre
     , string-interpolate
     , text
     , unordered-containers
