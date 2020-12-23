@@ -55,7 +55,8 @@ parserCommand = hsubparser
   <> command "push" (info (pure Push) (progDesc "Push changes upstream"))
   <> command "pull" (info (pure Pull) (progDesc "Pull from upstream"))
   <> command "git" (info parserRaw (progDesc "Run some raw git command"))
-  <> command "gen" (info (pure Generate) (progDesc "Generate contents"))
+  <> command "gen" (info parserGen (progDesc "Generate contents"))
+  <> command "compose" (info parseCompose (progDesc "Run docker compose command"))
   )
 
 -- Parser for the `New` command
@@ -86,6 +87,35 @@ parserListCmd = hsubparser
   <> command "pkgs" (info (pure ListPkgs) (progDesc "Show configured packages"))
   <> command "log" (info (pure ListCommitLog) (progDesc "Show short commit log"))
   )
+
+parserGen :: Parser Command
+parserGen = Generate <$> parserGenCmds
+
+parserGenCmds :: Parser GenCmds 
+parserGenCmds = hsubparser
+  (  command "homepage" (info (pure GenHomepage) (progDesc "Generate homepage"))
+  <> command "compose" (info (pure GenCompose) (progDesc "Generate docker compose / env"))
+  )
+
+parseCompose :: Parser Command 
+parseCompose = Compose <$> hsubparser 
+  (  command "up" (info parseComposeUpCmd (progDesc "Run compose up command"))
+  <> command "down" (info (pure ComposeDown) (progDesc "Run compose down command"))
+  <> command "restart" (info parseComposeRestartCmd (progDesc "Run compose restart command"))
+  <> command "pull" (info parseComposePullCmd (progDesc "Run compose pull command"))
+  )
+
+parseComposeUpCmd :: Parser ComposeCmds
+parseComposeUpCmd = ComposeUp <$> parseComposeServiceArg
+
+parseComposePullCmd :: Parser ComposeCmds
+parseComposePullCmd = ComposePull <$> parseComposeServiceArg
+
+parseComposeRestartCmd :: Parser ComposeCmds 
+parseComposeRestartCmd = ComposeRestart <$> parseComposeServiceArg
+
+parseComposeServiceArg :: Parser [String]
+parseComposeServiceArg = many (argument str (metavar "SERVICE"))
 
 -- Parser for `ListFiles` command
 parserListFiles :: Parser ListCmds

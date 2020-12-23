@@ -12,12 +12,16 @@ import Workflow.Gen
 import Workflow.Input
 import Workflow.System
 import Workflow.Updates
+import Workflow.Compose
 
 import System.Directory
 import System.FilePath
 import System.Environment
 
+import Core.Config
+
 main :: IO ()
+--main = testReadEnvFile
 main = do
   args <- getArgs
   if any (isInfixOf "-completion-") args
@@ -26,7 +30,7 @@ main = do
 
 bootstrap :: IO ()
 bootstrap = do
-  -- Make sure git & pip is installed!
+  -- Make sure git is installed!
   checkDependency "git"
 
   -- Check for config file
@@ -92,7 +96,14 @@ run psys conf = do
     Options _ (List ListPkgs)      -> systemShowPackagesWorkflow env
     Options _ (List (ListFiles f)) -> gitShowFilesWorkflow env f
     Options _ (List ListCommitLog) -> gitShowCommitLogWorkflow env
-    Options _ Generate             -> genHomepage $ config env
+    Options _ (Generate GenHomepage) -> genHomepage $ config env
+    Options _ (Generate GenCompose)   -> genCompose conf
+
+    -- Compose functions
+    Options d (Compose (ComposeUp xs)) -> composeUp d xs
+    Options d (Compose ComposeDown) -> composeDown d
+    Options d (Compose (ComposePull xs)) -> composePull d xs
+    Options d (Compose (ComposeRestart xs)) -> composeRestart d xs
 
     -- Debug fallthrough
     --xs -> print "Not Implemented!" >> print xs

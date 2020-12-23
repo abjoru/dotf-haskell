@@ -52,7 +52,7 @@ loadDotfConfig = do
 
   case rs of
     Right x -> return x
-    _       -> error $ "Unable to load config: " ++ (cd </> "dotf.yaml")
+    Left er -> error $ "Unable to load config: " ++ (cd </> "dotf.yaml") ++ " " ++ show er
 
 loadOsPackages :: PkgSystem -> IO OsPkgs
 loadOsPackages ps = do

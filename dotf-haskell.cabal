@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 9203f90f9caec4b469cb2fe390789455f82a9afb9929c4ece9acd1c474385f24
+-- hash: 58a340d52c7bf3f290b93a73e8a67799515e50e34a87ec0e3e54de73c9ba2125
 
 name:           dotf-haskell
 version:        0.1.0.0
@@ -27,13 +27,19 @@ source-repository head
 
 library
   exposed-modules:
+      Core.Config
       Core.Format
       Core.Options
       Core.Options.Parsers
       Core.Options.Types
       Core.Os
+      Core.Term
       Core.Types
+      Core.Types.Instances
+      Core.Types.Parsers
+      Core.Types.Types
       Core.Utils
+      Workflow.Compose
       Workflow.Gen
       Workflow.Git
       Workflow.Input
@@ -45,12 +51,15 @@ library
       src
   build-depends:
       aeson
+    , aeson-extra
     , base >=4.7 && <5
     , bytestring
     , directory
+    , extra
     , filepath
     , hostname
     , optparse-applicative
+    , pretty-terminal
     , process
     , regex-pcre
     , string-interpolate

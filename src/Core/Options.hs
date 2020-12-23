@@ -8,6 +8,8 @@ module Core.Options (
   ListCmds(..),
   AddMode(..),
   ListOps(..),
+  GenCmds(..),
+  ComposeCmds(..),
 
   -- Functions
   parseOptions

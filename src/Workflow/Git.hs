@@ -20,20 +20,20 @@ gitRawWorkflow = gitExec
 gitNewWorkflow :: Env -> DryMode -> Maybe String -> IO ()
 gitNewWorkflow (Env _ c _) d (Just u) = do
   home <- getHomeDirectory
-  exists <- doesPathExist $ repoDirectory c
-  let c1 = [i|git clone --bare #{u} #{repoDirectory c}|]
-      c2 = gith (repoDirectory c) home "checkout"
-      c3 = gith (repoDirectory c) home "config --local status.showUntrackedFiles no"
+  exists <- doesPathExist $ configRepoDirectory c
+  let c1 = [i|git clone --bare #{u} #{configRepoDirectory c}|]
+      c2 = gith (configRepoDirectory c) home "checkout"
+      c3 = gith (configRepoDirectory c) home "config --local status.showUntrackedFiles no"
   execute exists [c1, c2, c3]
-  where execute True _ = putStrLn [i|Local repo directory exists: #{repoDirectory c}|]
+  where execute True _ = putStrLn [i|Local repo directory exists: #{configRepoDirectory c}|]
         execute False cmds = mapM_ (runCmd d) cmds
 gitNewWorkflow (Env _ c _) d _ = do
   home <- getHomeDirectory
-  exists <- doesPathExist $ repoDirectory c
-  let c1 = [i|git init --bare #{repoDirectory c}|]
-      c2 = gith (repoDirectory c) home "config --local status.showUntrackedFiles no"
+  exists <- doesPathExist $ configRepoDirectory c
+  let c1 = [i|git init --bare #{configRepoDirectory c}|]
+      c2 = gith (configRepoDirectory c) home "config --local status.showUntrackedFiles no"
   execute exists [c1, c2]
-  where execute True _ = putStrLn [i|Local repo directory exists: #{repoDirectory c}|]
+  where execute True _ = putStrLn [i|Local repo directory exists: #{configRepoDirectory c}|]
         execute False cmds = mapM_ (runCmd d) cmds
 
 gitStatusWorkflow :: Env -> IO ()
@@ -88,7 +88,7 @@ gitExec :: Env -> DryMode -> String -> IO ()
 gitExec env dry cmd = gitc env cmd >>= runCmd dry
   where gitc (Env _ c _) cmd = do
           h <- getHomeDirectory
-          return $ gith (repoDirectory c) h cmd
+          return $ gith (configRepoDirectory c) h cmd
 
 gith :: FilePath -> FilePath -> String -> String
 gith a b c = [i|git --git-dir=#{a} --work-tree=#{b} #{c}|]

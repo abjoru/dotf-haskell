@@ -7,6 +7,7 @@ import Core.Format
 import Core.Options
 
 import Control.Monad
+import Control.Monad.Extra (partitionM)
 
 import Data.String.Interpolate (i)
 
@@ -25,12 +26,14 @@ updateSystem e d = do
 -- Creates a list of command strings to execute in order
 mkCommands :: Env -> OsPkgs -> IO [String]
 mkCommands e osp = do
-  gitPkgs <- extractGits e
+  (ng, ug) <- extractGits' e
 
   return $ mkUpdateCmd e
+        ++ mkPipUpdateCmd
         ++ (mkScriptCmds $ extractPreInstallScripts e)
         ++ (mkPkgCmds e $ extractPkgs e osp)
-        ++ (mkGitCmds e gitPkgs)
+        ++ (mkGitCmds e ng)
+        ++ (mkGitUpdCmds e ug)
         ++ (mkPipCmds $ extractPips e osp)
         ++ (mkScriptCmds $ extractInstallScripts e)
         ++ (mkScriptCmds $ extractPostInstallScripts e)
@@ -44,6 +47,9 @@ mkUpdateCmd :: Env -> [String]
 mkUpdateCmd (Env Pacman _ _)   = ["yay && sudo pacman -Syyu"]
 mkUpdateCmd (Env Homebrew _ _) = ["brew upgrade"]
 mkUpdateCmd (Env Apt _ _)      = ["sudo apt update && sudo apt upgrade"]
+
+mkPipUpdateCmd :: [String]
+mkPipUpdateCmd = [[i|pip list -o | cut -f1 -d' ' | tr " " "\\n" | awk '{if(NR>=3)print}' | cut -d' ' -f1 | xargs -n1 pip install -U|]]
 
 -- Create pkg commands
 mkPkgCmds :: Env -> [Pkg] -> [String]
@@ -79,12 +85,25 @@ apt :: [Pkg] -> String
 apt px = mkString "sudo apt install " " " "" $ pkgName <$> px
 
 mkGitCmds :: Env -> [GitPkg] -> [String]
-mkGitCmds (Env _ c _) gx = concat (buildCmd (gitDirectory c) <$> gx)
+mkGitCmds (Env _ c _) gx = concat (buildCmd (configGitDirectory c) <$> gx)
   where buildCmd :: FilePath -> GitPkg -> [String]
         buildCmd d (GitPkg n u Nothing False s c)  = [[i|git clone #{u} #{d </> n}|], inst s c (d </> n)]
         buildCmd d (GitPkg n u Nothing True s c)   = [[i|git clone --recurse-submodules #{u} #{d </> n}|], inst s c (d </> n)]
         buildCmd d (GitPkg n u (Just b) False s c) = [[i|git clone -b #{b} #{u} #{d </> n}|], inst s c (d </> n)]
         buildCmd d (GitPkg n u (Just b) True s c) = [[i|git clone --recurse-submodules -b #{b} #{u} #{d </> n}|], inst s c (d </> n)]
+
+        inst :: Maybe String -> Maybe FilePath -> FilePath -> String
+        inst _ (Just x) d = [i|pushd #{d} ; #{x} ; popd|]
+        inst (Just x) _ _ = "sh " ++ x
+        inst _ _ d        = [i|echo 'No install instructions for #{d}'|]
+
+mkGitUpdCmds :: Env -> [GitPkg] -> [String]
+mkGitUpdCmds (Env _ c _) gx = concat (buildCmd (configGitDirectory c) <$> gx)
+  where buildCmd :: FilePath -> GitPkg -> [String]
+        buildCmd d (GitPkg n _ _ False s c) = [[i|pushd #{d </> n} ; git pull ; popd|], inst s c (d </> n)]
+        buildCmd d (GitPkg n _ _ True s c)  = [ [i|pushd #{d </> n} ; git pull && git submodules update --recursive ; popd|]
+                                              , inst s c (d </> n)
+                                              ]
 
         inst :: Maybe String -> Maybe FilePath -> FilePath -> String
         inst _ (Just x) d = [i|pushd #{d} ; #{x} ; popd|]
@@ -112,7 +131,15 @@ extractGits :: Env -> IO [GitPkg]
 extractGits (Env _ c ic) =
   let pkgs = foldl (\a b -> a ++ bundleGitPkgs b) [] $ bundles ic
    in filterM exists pkgs
-  where exists g = not <$> (doesDirectoryExist $ gitDirectory c </> gitName g)
+  where exists g = not <$> (doesDirectoryExist $ configGitDirectory c </> gitName g)
+
+-- Partition git paths in 'does not exist' -> 'exists'
+-- This should be used to install new ones and update/pull + reinstall old
+extractGits' :: Env -> IO ([GitPkg], [GitPkg])
+extractGits' (Env _ c ic) =
+  let pkgs = foldl (\a b -> a ++ bundleGitPkgs b) [] $ bundles ic
+   in partitionM exists pkgs
+  where exists g = not <$> (doesDirectoryExist $ configGitDirectory c </> gitName g)
 
 -- Extract all 'new' pip packages.
 extractPips :: Env -> OsPkgs -> [String]

@@ -29,8 +29,9 @@ data Command = New (Maybe String)
              | Squash Int        -- Interactive rebase: HEAD~<int>
              | Push              -- push to upstream
              | Pull              -- pull from upstream
-             | Raw String        -- raw '<raw git command args>'
-             | Generate
+             | Raw String        -- raw '<git command args>'
+             | Generate GenCmds
+             | Compose ComposeCmds
              deriving Show
 
 -- List sub-commands (i.e. show options)
@@ -40,6 +41,17 @@ data ListCmds = ListFiles ListOps
               | ListBranches
               | ListCommitLog
               deriving Show
+
+data GenCmds = GenHomepage    -- Generate homepage
+             | GenCompose      -- Generate docker compose and env files
+             deriving Show
+
+-- Docker Compose commands
+data ComposeCmds = ComposeUp [String]
+                 | ComposeDown
+                 | ComposeRestart [String]
+                 | ComposePull [String]
+                 deriving Show
 
 data ListOps = ListOps
   { gitMode :: GitMode

@@ -4,7 +4,9 @@ module Core.Format where
 import Core.Types
 
 import Data.Char (toLower)
-import Data.String.Interpolate (__i)
+import Data.String.Interpolate (i, __i)
+
+import qualified Data.HashMap.Lazy as HML
 
 -- Create a string from an array using the given separator
 sep :: String -> [String] -> String
@@ -19,10 +21,14 @@ mkString _ _ _ [] = ""
 mkString pre _ post [x] = pre ++ x ++ post
 mkString pre s post (x:xs) = pre ++ x ++ s ++ sep s xs ++ post
 
--- TODO Move to templates, or something
+mkConfigStr :: HML.HashMap String String -> String
+mkConfigStr ms = sep "\n" $ map f $ HML.toList ms
+  where f :: (String, String) -> String
+        f (k, v) = [i|#{k}=#{v}|]
 
+-- TODO Move to templates, or something
 defaultConfig :: Config -> String
-defaultConfig (Config h gd _ _ rd _) =
+defaultConfig (Config h gd _ _ rd _ _ _ _ _ _ _) =
   [__i|\# Default DotF Configuration
 
   \#\#\#\#\#\#\#\#\#\#\#
@@ -30,7 +36,7 @@ defaultConfig (Config h gd _ _ rd _) =
   \#\#\#\#\#\#\#\#\#\#\#
 
   \# UI or non-UI system
-  headless: #{map toLower $ show h}
+  headless: #{Prelude.map toLower $ show h}
 
   \#\#\#\#\#\#\#\#\#\#\#\#\#\#\#
   \# Directories \#

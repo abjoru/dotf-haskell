@@ -39,6 +39,9 @@ library:
     - string-interpolate
     - hostname
     - regex-pcre
+    - pretty-terminal
+    - aeson-extra
+    - extra
 
 executables:
   dotf:

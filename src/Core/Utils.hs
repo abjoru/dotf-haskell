@@ -3,7 +3,10 @@ module Core.Utils where
 
 import Core.Types
 
+import Data.Aeson (Value)
+import qualified Data.Aeson.Extra.Merge as M
 import Data.String.Interpolate (i)
+import Data.HashMap.Strict as HM
 
 import System.Process
 import System.Exit (ExitCode(..), exitSuccess)
@@ -50,5 +53,12 @@ removeFiles xs = forM_ xs removeIfExists
 -- Else put config directory as base path
 toAbsolute :: Config -> FilePath -> FilePath
 toAbsolute _ f@('/':_) = f
-toAbsolute c ('~':r) = homeDirectory c ++ r
+toAbsolute c ('~':r) = configHomeDirectory c ++ r
 toAbsolute c f = configDirectory c </> f
+
+-- Aeson Value merge (left-bias)
+merge :: Value -> Value -> Value
+merge = M.merge f
+  where f r (M.ObjectF a) (M.ObjectF b) = M.ObjectF $ HM.unionWith r a b
+        f _ (M.ArrayF a)  (M.ArrayF b)  = M.ArrayF $ a <> b
+        f _ a _                         = a

@@ -2,11 +2,13 @@
 module Workflow.Input where
 
 import Core.Types
+import qualified Core.Term as Term
 
 import Data.String.Interpolate (i, __i)
 
 import System.Directory
 import System.FilePath ((</>))
+import System.Console.Pretty
 
 dBool :: String -> Bool -> IO Bool
 dBool q d = val <$> (putStrLn q >> getChar)
@@ -33,18 +35,27 @@ dPath d q = val <$> (putStrLn q >> getLine)
 
 inputBootstrap :: IO Config
 inputBootstrap = do
-  h <- getHomeDirectory
-  d <- getXdgDirectory XdgConfig "dotf"
+  h  <- getHomeDirectory
+  d  <- getXdgDirectory XdgConfig "dotf"
+  ic <- supportsPretty
 
   let dataPath = h </> ".local" </> "share"
       barePath = h </> ".dotf"
 
-  putStrLn [__i|Looks like this is the first time running DotF.
-                You will need a configuration file so that DotF knows where to find stuff.
-                Please answer the following questions truthfully..|]
+  Term.info [__i|Looks like this is the first time running DotF.
+                 You will need a configuration file so that DotF knows where to find stuff.
+                 Please answer the following questions truthfully..|]
 
-  ah <- dBool "\n1. Is this a headless system? (y/N)" False
-  ag <- dPath dataPath $ "\n" ++ [i|2. Where do you want to store Git cloned packages? (#{dataPath})|]
-  ar <- dPath barePath $ "\n" ++ [i|3. Where do you want your Git bare repo config to reside? (#{barePath})|]
+  ah <- dBool (qHeadless ic) False
+  ag <- dPath dataPath $ qGitPath ic dataPath
+  ar <- dPath barePath $ qBarePath ic barePath
 
-  return $ Config ah ag h d ar Nothing
+  return $ Config ah ag h d ar Nothing Nothing Nothing Nothing Nothing Nothing Nothing
+    where qHeadless True = "\n1. Is this a headless system? (y/" ++ style Bold "N" ++ ")"
+          qHeadless _    = "\n1. Is this a headless system? (y/N)"
+
+          qGitPath True p = "\n2. Where do you want to store Git cloned packages? (" ++ style Bold p ++ ")"
+          qGitPath _ p    = [i|\n2. Where do you want to store Git cloned packages? (#{p})|]
+
+          qBarePath True p = "\n3. Where do you want your Git bare repo config to reside? (" ++ style Bold p ++ ")"
+          qBarePath _ p    = [i|\n3. Where do you want your Git bare repo config to reside? (#{p})|]
