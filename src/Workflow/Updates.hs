@@ -2,6 +2,7 @@
 module Workflow.Updates (updateSystem) where
 
 import Core.Os
+import Core.Utils
 import Core.Types
 import Core.Format
 import Core.Options
@@ -14,6 +15,8 @@ import Data.String.Interpolate (i)
 import System.Process
 import System.Directory (doesDirectoryExist)
 import System.FilePath ((</>))
+
+-- TODO check and extract only those pip packages that should be updated!
 
 updateSystem :: Env -> DryMode -> IO ()
 updateSystem e d = do
@@ -49,7 +52,12 @@ mkUpdateCmd (Env Homebrew _ _) = ["brew upgrade"]
 mkUpdateCmd (Env Apt _ _)      = ["sudo apt update && sudo apt upgrade"]
 
 mkPipUpdateCmd :: [String]
-mkPipUpdateCmd = [[i|pip list -o | cut -f1 -d' ' | tr " " "\\n" | awk '{if(NR>=3)print}' | cut -d' ' -f1 | xargs -n1 pip install -U|]]
+mkPipUpdateCmd = [[i|#{list} | #{cut} | #{tr} | #{awk} | #{cut} | #{xargs}|]]
+  where list  = "pip list -o"
+        cut   = "cut -f1 -d' '"
+        tr    = "tr \" \" \"\\n\""
+        awk   = "awk '{if(NR>=3)print}'"
+        xargs = "xargs -n1 pip install -U"
 
 -- Create pkg commands
 mkPkgCmds :: Env -> [Pkg] -> [String]
@@ -93,28 +101,28 @@ mkGitCmds (Env _ c _) gx = concat (buildCmd (configGitDirectory c) <$> gx)
         buildCmd d (GitPkg n u (Just b) True s c) = [[i|git clone --recurse-submodules -b #{b} #{u} #{d </> n}|], inst s c (d </> n)]
 
         inst :: Maybe String -> Maybe FilePath -> FilePath -> String
-        inst _ (Just x) d = [i|pushd #{d} ; #{x} ; popd|]
-        inst (Just x) _ _ = "sh " ++ x
+        inst _ (Just x) d = mkCmdIn d x
+        inst (Just x) _ _ = "bash " ++ x
         inst _ _ d        = [i|echo 'No install instructions for #{d}'|]
 
 mkGitUpdCmds :: Env -> [GitPkg] -> [String]
 mkGitUpdCmds (Env _ c _) gx = concat (buildCmd (configGitDirectory c) <$> gx)
   where buildCmd :: FilePath -> GitPkg -> [String]
-        buildCmd d (GitPkg n _ _ False s c) = [[i|pushd #{d </> n} ; git pull ; popd|], inst s c (d </> n)]
-        buildCmd d (GitPkg n _ _ True s c)  = [ [i|pushd #{d </> n} ; git pull && git submodules update --recursive ; popd|]
+        buildCmd d (GitPkg n _ _ False s c) = [mkCmdIn (d </> n) "git pull", inst s c (d </> n)]
+        buildCmd d (GitPkg n _ _ True s c)  = [ mkCmdIn (d </> n) "git pull && git submodules update --recursive"
                                               , inst s c (d </> n)
                                               ]
 
         inst :: Maybe String -> Maybe FilePath -> FilePath -> String
-        inst _ (Just x) d = [i|pushd #{d} ; #{x} ; popd|]
-        inst (Just x) _ _ = "sh " ++ x
+        inst _ (Just x) d = mkCmdIn d x
+        inst (Just x) _ _ = "bash " ++ x
         inst _ _ d        = [i|echo 'No install instructions for #{d}'|]
 
 mkPipCmds :: [String] -> [String]
 mkPipCmds xs = [mkString "pip install " " " "" xs]
 
 mkScriptCmds :: [FilePath] -> [String]
-mkScriptCmds xs = ("sh " ++ ) <$> xs
+mkScriptCmds xs = ("bash " ++ ) <$> xs
 
 ----------------
 -- Extractors --

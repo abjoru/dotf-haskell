@@ -20,10 +20,15 @@ import System.Environment
 
 import Core.Config
 
+-- TODO should be able to run without pkg install yaml for all
+-- cmds except update (and perhaps some other ones)
+-- Allows for attaching and switching branches and such without
+-- errors
+
 main :: IO ()
---main = testReadEnvFile
 main = do
   args <- getArgs
+  -- allow completion script command to run without bootstrap
   if any (isInfixOf "-completion-") args
      then parseOptions >> pure ()
      else bootstrap
@@ -53,12 +58,12 @@ mkConfig fp psys = do
   cfg <- inputBootstrap
 
   let configFile = fp </> "dotf.yaml"
-      exampleBuild = fp </> ("example-" ++ installFilename psys)
+      exampleFile = fp </> ("example-" ++ installFilename psys)
 
   -- Write initial configs
   createDirectoryIfMissing True fp
   writeFile configFile $ defaultConfig cfg
-  writeFile exampleBuild defaultPkgConfig
+  writeFile exampleFile defaultPkgConfig
 
   return cfg
 
@@ -100,9 +105,9 @@ run psys conf = do
     Options _ (Generate GenCompose)   -> genCompose conf
 
     -- Compose functions
-    Options d (Compose (ComposeUp xs)) -> composeUp d xs
-    Options d (Compose ComposeDown) -> composeDown d
-    Options d (Compose (ComposePull xs)) -> composePull d xs
+    Options d (Compose (ComposeUp xs))      -> composeUp d xs
+    Options d (Compose ComposeDown)         -> composeDown d
+    Options d (Compose (ComposePull xs))    -> composePull d xs
     Options d (Compose (ComposeRestart xs)) -> composeRestart d xs
 
     -- Debug fallthrough

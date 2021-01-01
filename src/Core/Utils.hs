@@ -10,7 +10,7 @@ import Data.HashMap.Strict as HM
 
 import System.Process
 import System.Exit (ExitCode(..), exitSuccess)
-import System.Directory --(getXdgDirectory, XdgDirectory(XdgConfig))
+import System.Directory 
 import System.FilePath ((</>))
 
 import Control.Monad
@@ -32,10 +32,14 @@ runScript' (Just s) = do
 -- Runs some command in the given directory
 runCmdIn :: FilePath -> String -> IO ()
 runCmdIn p c = do 
-  r <- system [i|pushd #{p} ; #{c} ; popd|]
+  r <- system $ mkCmdIn p c
   case r of 
     ExitSuccess -> pure ()
     ExitFailure e -> putStrLn [i|Failed to execute cmd: '#{c}': exit code #{e}|]
+
+-- Make bash command to be executed in some directory
+mkCmdIn :: FilePath -> String -> String
+mkCmdIn p c = [i|bash -c "pushd #{p} ; #{c} ; popd"|]
 
 -- Removes list of files if they exist
 removeFiles :: [FilePath] -> IO ()

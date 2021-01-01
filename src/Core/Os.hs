@@ -42,7 +42,8 @@ loadInstallConfig ps c = do
   case rs of
     Right x -> return x
     Left err -> do 
-      putStrLn [i|Error reading #{installFilename ps}! #{show err}|]
+      putStrLn [i|Error reading #{installFilename ps}!|]
+      putStrLn err
       return $ InstallConfig "Empty" "" []
 
 loadDotfConfig :: IO Config
