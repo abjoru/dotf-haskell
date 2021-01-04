@@ -42,6 +42,9 @@ library:
     - pretty-terminal
     - aeson-extra
     - extra
+    - split
+    - http-conduit
+    - zip-archive
 
 executables:
   dotf:

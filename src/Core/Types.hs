@@ -10,18 +10,12 @@ module Core.Types (
 ) where
 
 import Core.Types.Types
-import Core.Types.Instances
-import Core.Types.Parsers
-
-
+import Core.Types.Instances ()
 
 import Control.Arrow (left)
 
 import Data.Yaml
-import qualified Data.Text as T
 import qualified Data.HashMap.Strict as HM
-import qualified Data.Vector as V
-
 import qualified Data.Aeson.Extra.Merge as M
 
 import System.Directory
@@ -125,19 +119,17 @@ decodeBundles c f = do
 
           checkBundle :: Bundle -> Bundle
           checkBundle b@(Bundle _ _ _ g _ f1 f2 f3) = 
-            b { bundleScript = checkDir f1 c
-              , bundlePreInstall = checkDir f2 c
-              , bundlePostInstall = checkDir f3 c
+            b { bundleScript = checkDir c f1
+              , bundlePreInstall = checkDir c f2
+              , bundlePostInstall = checkDir c f3
               , bundleGitPkgs = map checkGitItem g
               }
 
           checkGitItem :: GitPkg -> GitPkg
-          checkGitItem g@(GitPkg _ _ _ _ v _) = g { gitInstallScript = checkDir v c }
-
-          checkDir (Just f@('/':_)) _ = Just f
-          checkDir (Just ('~':r)) c   = Just (configHomeDirectory c ++ r)
-          checkDir (Just r) c         = Just (configDirectory c </> r)
-          checkDir o _                = o
+          checkGitItem g@(GitPkg _ _ _ _ v _ _) = g { gitInstallScript = checkDir c v }
+          
+          checkDir :: Config -> Maybe FilePath -> Maybe FilePath
+          checkDir c = internalCheckPath' (configHomeDirectory c) (configDirectory c)
 
 -- Decode `Groups` instance
 decodeGroups :: FilePath -> IO (Either ParseException Groups)

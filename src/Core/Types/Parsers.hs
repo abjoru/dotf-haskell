@@ -60,7 +60,8 @@ parseGitPkgs (Just (Array a)) = mapM pkg $ V.toList a
               submod = parseJSON $ HM.lookupDefault (Bool False) "submodules" o
               script = parseJSON $ HM.lookupDefault Null "install" o
               cmd    = parseJSON $ HM.lookupDefault Null "command" o
-           in GitPkg name <$> url <*> branch <*> submod <*> script <*> cmd
+              tpath  = parseJSON $ HM.lookupDefault Null "target" o
+           in GitPkg name <$> url <*> branch <*> submod <*> script <*> cmd <*> tpath
 
         f _ k Null = T.unpack k
         f a _ _    = a

@@ -127,4 +127,5 @@ data GitPkg = GitPkg
   , gitSubmodules :: Bool
   , gitInstallScript :: Maybe FilePath
   , gitInstallCommand :: Maybe String
+  , gitTargetPath :: Maybe FilePath
   } deriving Show

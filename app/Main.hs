@@ -5,12 +5,16 @@ import Core.Types
 import Core.Format
 import Core.Options
 
+import qualified Core.Term as Term
+
+import Data.Maybe (catMaybes)
 import Data.List (isInfixOf)
 
 import Workflow.Git
 import Workflow.Gen
 import Workflow.Input
 import Workflow.System
+import Workflow.Openvpn
 import Workflow.Updates
 import Workflow.Compose
 
@@ -35,23 +39,22 @@ main = do
 
 bootstrap :: IO ()
 bootstrap = do
-  -- Make sure git is installed!
-  checkDependency "git"
-
   -- Check for config file
   cfgDir <- getXdgDirectory XdgConfig "dotf"
   exists <- doesFileExist $ cfgDir </> "dotf.yaml"
   pkgSys <- findPackageSystem
 
-  -- Check for package manager extras
-  -- Base managers will be indirectly checked by 'findPackageSystem'
-  case pkgSys of
-    Pacman -> checkDependency "yay"
-    _ -> pure ()
+  -- Check dependencies
+  gotGit <- which' "git"
+  gotPip <- which' "pip"
+  gotYay <- case pkgSys of Pacman -> which' "yay"
+                           _      -> pure Nothing
 
-  if exists
-     then loadDotfConfig >>= run pkgSys
-     else mkConfig cfgDir pkgSys >>= run pkgSys
+  case catMaybes [gotGit, gotPip, gotYay] of
+    [] -> if exists
+             then loadDotfConfig >>= run pkgSys
+             else mkConfig cfgDir pkgSys >>= run pkgSys
+    xs -> Term.err $ mkString "Missing dependencies: " ", " "" xs
 
 mkConfig :: FilePath -> PkgSystem -> IO Config
 mkConfig fp psys = do
@@ -101,8 +104,11 @@ run psys conf = do
     Options _ (List ListPkgs)      -> systemShowPackagesWorkflow env
     Options _ (List (ListFiles f)) -> gitShowFilesWorkflow env f
     Options _ (List ListCommitLog) -> gitShowCommitLogWorkflow env
+
+    -- Generate files
     Options _ (Generate GenHomepage) -> genHomepage $ config env
     Options _ (Generate GenCompose)   -> genCompose conf
+    Options _ (Generate GenPiaVpn)   -> genVpnConfig env
 
     -- Compose functions
     Options d (Compose (ComposeUp xs))      -> composeUp d xs

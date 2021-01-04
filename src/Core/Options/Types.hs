@@ -43,7 +43,8 @@ data ListCmds = ListFiles ListOps
               deriving Show
 
 data GenCmds = GenHomepage    -- Generate homepage
-             | GenCompose      -- Generate docker compose and env files
+             | GenCompose     -- Generate docker compose and env files
+             | GenPiaVpn      -- Generate PIA openvpn configs
              deriving Show
 
 -- Docker Compose commands

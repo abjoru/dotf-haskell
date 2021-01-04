@@ -95,10 +95,14 @@ apt px = mkString "sudo apt install " " " "" $ pkgName <$> px
 mkGitCmds :: Env -> [GitPkg] -> [String]
 mkGitCmds (Env _ c _) gx = concat (buildCmd (configGitDirectory c) <$> gx)
   where buildCmd :: FilePath -> GitPkg -> [String]
-        buildCmd d (GitPkg n u Nothing False s c)  = [[i|git clone #{u} #{d </> n}|], inst s c (d </> n)]
-        buildCmd d (GitPkg n u Nothing True s c)   = [[i|git clone --recurse-submodules #{u} #{d </> n}|], inst s c (d </> n)]
-        buildCmd d (GitPkg n u (Just b) False s c) = [[i|git clone -b #{b} #{u} #{d </> n}|], inst s c (d </> n)]
-        buildCmd d (GitPkg n u (Just b) True s c) = [[i|git clone --recurse-submodules -b #{b} #{u} #{d </> n}|], inst s c (d </> n)]
+        buildCmd d g@(GitPkg n u Nothing False s c _)  = [[i|git clone #{u} #{targetDir d g}|], inst s c (d </> n)]
+        buildCmd d g@(GitPkg n u Nothing True s c _)   = [[i|git clone --recurse-submodules #{u} #{targetDir d g}|], inst s c (d </> n)]
+        buildCmd d g@(GitPkg n u (Just b) False s c _) = [[i|git clone -b #{b} #{u} #{targetDir d g}|], inst s c (d </> n)]
+        buildCmd d g@(GitPkg n u (Just b) True s c _)  = [[i|git clone --recurse-submodules -b #{b} #{u} #{targetDir d g}|], inst s c (d </> n)]
+
+        targetDir :: FilePath -> GitPkg -> FilePath
+        targetDir _ (GitPkg _ _ _ _ _ _ (Just t)) = t
+        targetDir c (GitPkg n _ _ _ _ _ _)        = c </> n
 
         inst :: Maybe String -> Maybe FilePath -> FilePath -> String
         inst _ (Just x) d = mkCmdIn d x
@@ -108,8 +112,8 @@ mkGitCmds (Env _ c _) gx = concat (buildCmd (configGitDirectory c) <$> gx)
 mkGitUpdCmds :: Env -> [GitPkg] -> [String]
 mkGitUpdCmds (Env _ c _) gx = concat (buildCmd (configGitDirectory c) <$> gx)
   where buildCmd :: FilePath -> GitPkg -> [String]
-        buildCmd d (GitPkg n _ _ False s c) = [mkCmdIn (d </> n) "git pull", inst s c (d </> n)]
-        buildCmd d (GitPkg n _ _ True s c)  = [ mkCmdIn (d </> n) "git pull && git submodules update --recursive"
+        buildCmd d (GitPkg n _ _ False s c _) = [mkCmdIn (d </> n) "git pull", inst s c (d </> n)]
+        buildCmd d (GitPkg n _ _ True s c _)  = [ mkCmdIn (d </> n) "git pull && git submodules update --recursive"
                                               , inst s c (d </> n)
                                               ]
 

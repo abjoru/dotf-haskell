@@ -95,6 +95,7 @@ parserGenCmds :: Parser GenCmds
 parserGenCmds = hsubparser
   (  command "homepage" (info (pure GenHomepage) (progDesc "Generate homepage"))
   <> command "compose" (info (pure GenCompose) (progDesc "Generate docker compose / env"))
+  <> command "vpn" (info (pure GenPiaVpn) (progDesc "Generate PIA openvpn configs"))
   )
 
 parseCompose :: Parser Command 

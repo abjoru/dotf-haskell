@@ -6,6 +6,7 @@ import Core.Format
 import Core.Utils
 
 import Data.Yaml
+import Data.List.Split (chunksOf)
 import Data.String.Interpolate (i, __i)
 
 import System.Directory (createDirectoryIfMissing, getXdgDirectory, XdgDirectory(XdgCache))
@@ -41,8 +42,12 @@ genHomepage _ = pure ()
 -----------
 
 mkGroups :: HostName -> Either ParseException Groups -> String
-mkGroups host (Right (Groups gs)) = foldl (build host) "" gs
-  where build :: HostName -> String -> Group -> String
+mkGroups host (Right (Groups gs)) = foldl (assem host) "" $ chunksOf 6 gs
+  where assem h acc gx = acc ++ [__i|<div class="bookmark-container">
+                                  #{foldl (build h) "" gx}
+                                </div>|]
+
+        build :: HostName -> String -> Group -> String
         build h acc (Group n f xs) = 
           if checkHost h f
              then acc ++ mkLinks n xs

@@ -1,6 +1,8 @@
 {-# LANGUAGE OverloadedStrings, DeriveGeneric, QuasiQuotes #-}
 module Core.Os where
 
+import qualified Core.Term as Term
+
 import GHC.Generics
 
 import Data.Aeson
@@ -46,6 +48,8 @@ loadInstallConfig ps c = do
       putStrLn err
       return $ InstallConfig "Empty" "" []
 
+-- Load DotF config if defined
+-- Errors if config not found or unable to load/parse!
 loadDotfConfig :: IO Config
 loadDotfConfig = do
   cd <- getXdgDirectory XdgConfig "dotf"
@@ -55,6 +59,8 @@ loadDotfConfig = do
     Right x -> return x
     Left er -> error $ "Unable to load config: " ++ (cd </> "dotf.yaml") ++ " " ++ show er
 
+-- Loads an index of various packages installed on the system.
+-- This includes system packages as well as PIP python packages.
 loadOsPackages :: PkgSystem -> IO OsPkgs
 loadOsPackages ps = do
   pkgs <- listOsPkgs ps
@@ -82,6 +88,11 @@ checkDependency app = which app >>= check
   where check Nothing = error $ "ERROR: Missing " ++ app ++ " on system path!"
         check _       = pure ()
 
+-- checkDep :: String -> IO (Either String ())
+-- checkDep app = check <$> which app
+  -- where check Nothing = Left $ "Missing " ++ app ++ " on system path!"
+        -- check _       = Right ()
+
 checkEnv :: Env -> IO ()
 checkEnv (Env _ _ ic) = case pips of
   [] -> pure ()
@@ -96,3 +107,12 @@ which arg = do
   case x of
     ExitSuccess   -> pure $ Just arg
     ExitFailure _ -> pure Nothing
+
+-- Flipped version of which. This will return the 
+-- app name if the app is not found!
+which' :: String -> IO (Maybe String)
+which' app = do
+  x <- which app
+  return $ case x of
+    Just _  -> Nothing 
+    Nothing -> Just app
