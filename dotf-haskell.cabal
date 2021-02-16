@@ -4,10 +4,10 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 41aa6dd7d040793d7b99a91eb76c3bea3549f23f6c8bd435d7a066e3d915f002
+-- hash: e0b2747ea9715dcdd7e26ca01bea7a630e903242cd465ba7212e5644f1be5ef3
 
 name:           dotf-haskell
-version:        0.1.0.0
+version:        0.2.0
 description:    Please see the README on GitHub at <https://github.com/abjoru/dotf-haskell#readme>
 homepage:       https://github.com/abjoru/dotf-haskell#readme
 bug-reports:    https://github.com/abjoru/dotf-haskell/issues
