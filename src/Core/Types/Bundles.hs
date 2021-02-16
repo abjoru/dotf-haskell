@@ -65,9 +65,9 @@ mkGitInstallCmds :: Env -> [Git] -> [String]
 mkGitInstallCmds (Env _ c _) gx = concat (buildCmd (configGitDirectory c) <$> gx)
   where buildCmd :: FilePath -> Git -> [String]
         buildCmd d g@(Git n u Nothing False s c _)  = [[i|git clone #{u} #{targetDir d g}|], inst s c (d </> n)]
-        buildCmd d g@(Git n u Nothing True s c _)   = [[i|git clone --resurse-submodules #{u} #{targetDir d g}|], inst s c (d </> n)]
+        buildCmd d g@(Git n u Nothing True s c _)   = [[i|git clone --recurse-submodules #{u} #{targetDir d g}|], inst s c (d </> n)]
         buildCmd d g@(Git n u (Just b) False s c _) = [[i|git clone -b #{b} #{u} #{targetDir d g}|], inst s c (d </> n)]
-        buildCmd d g@(Git n u (Just b) True s c _)  = [[i|git clone ----resurse-submodules -b #{b} #{u} #{targetDir d g}|], inst s c (d </> n)]
+        buildCmd d g@(Git n u (Just b) True s c _)  = [[i|git clone ----recurse-submodules -b #{b} #{u} #{targetDir d g}|], inst s c (d </> n)]
 
         targetDir _ (Git _ _ _ _ _ _ (Just t)) = t
         targetDir c (Git n _ _ _ _ _ _)        = c </> n
