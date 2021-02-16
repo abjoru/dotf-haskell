@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Core.Types.Docker.Decoders where
 
-import Core.Utils
+import Core.Os
 import Core.Types.Docker.Types
 import Core.Types.Docker.Instances
 

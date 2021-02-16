@@ -1,9 +1,9 @@
 {-# LANGUAGE QuasiQuotes #-}
 module Workflow.Gen where
 
+import Core.Os
 import Core.Types
 import Core.Format
-import Core.Utils
 
 import Data.Yaml
 import Data.List.Split (chunksOf)

@@ -97,12 +97,13 @@ run psys conf = do
     Options d (Raw s)      -> gitRawWorkflow env d s
 
     -- Package functions
-    Options d Update               -> updateSystem env d
-    Options _ (List ListBundles)   -> systemShowBundlesWorkflow env
-    Options _ (List ListBranches)  -> gitShowBranchWorkflow env
-    Options _ (List ListPkgs)      -> systemShowPackagesWorkflow env
-    Options _ (List (ListFiles f)) -> gitShowFilesWorkflow env f
-    Options _ (List ListCommitLog) -> gitShowCommitLogWorkflow env
+    Options d Update                    -> updateSystem env d
+    Options _ (List ListBundles)        -> systemShowBundlesWorkflow env
+    Options _ (List ListBranches)       -> gitShowBranchWorkflow env
+    Options _ (List ListPkgs)           -> systemShowPackagesWorkflow env
+    Options _ (List (ListFiles f))      -> gitShowFilesWorkflow env f
+    Options _ (List ListCommitLog)      -> gitShowCommitLogWorkflow env
+    Options _ (List ListDockerServices) -> composeShow
 
     -- Generate files
     Options _ (Generate GenHomepage) -> genHomepage $ config env

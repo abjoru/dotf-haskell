@@ -2,8 +2,7 @@
 module Core.Format where
 
 import Data.List (sort)
-import Data.Char (toLower)
-import Data.String.Interpolate (i, __i)
+import Data.String.Interpolate (i)
 
 import qualified Data.HashMap.Lazy as HML
 

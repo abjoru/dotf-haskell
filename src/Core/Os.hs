@@ -1,6 +1,7 @@
+{-# LANGUAGE OverloadedStrings, QuasiQuotes #-}
 module Core.Os where
 
-import Core.Utils
+--import Core.Utils
 import qualified Core.Term as Term
 
 import GHC.Generics
@@ -11,10 +12,16 @@ import qualified Data.ByteString.Lazy.UTF8 as BLU
 
 import Core.Types.Bundles.Types
 
+import Control.Monad
+
 import System.Exit
 import System.Process
-import System.Directory (getXdgDirectory, XdgDirectory(..))
+import System.Directory 
 import System.FilePath ((</>))
+
+--------------------
+-- Package System --
+--------------------
 
 installFilename :: PkgSystem -> String
 installFilename Pacman   = "pacman.yaml"
@@ -56,18 +63,6 @@ checkDependency app = which app >>= check
   where check Nothing = error $ "ERROR: Missing " ++ app ++ " on system path!"
         check _       = pure ()
 
--- checkDep :: String -> IO (Either String ())
--- checkDep app = check <$> which app
-  -- where check Nothing = Left $ "Missing " ++ app ++ " on system path!"
-        -- check _       = Right ()
-
---checkEnv :: Env -> IO ()
---checkEnv (Env _ _ ic) = case pips of
-  --[] -> pure ()
-  --_  -> checkDependency "pip"
-  --where pips = foldl coll [] $ bundles ic
-        --coll acc b = acc ++ bundlePipPkgs b
-
 -- Check if prog exists on system
 which :: String -> IO (Maybe String)
 which arg = do
@@ -84,3 +79,42 @@ which' app = do
   return $ case x of
     Just _  -> Nothing 
     Nothing -> Just app
+
+-------------
+-- Scripts --
+-------------
+
+mkCmdIn :: FilePath -> String -> String
+mkCmdIn p c = [i|bash -c "pushd #{p} ; #{c} ; popd" > /dev/null 2>&1|]
+
+runCmdIn :: FilePath -> String -> IO ExitCode
+runCmdIn p c = system $ mkCmdIn p c
+
+runScript :: Maybe FilePath -> IO ExitCode
+runScript Nothing  = exitSuccess
+runScript (Just s) = system $ "sudo sh " ++ s
+
+----------------
+-- Filesystem --
+----------------
+
+type CheckPath = FilePath -> FilePath
+type CheckMaybePath = Maybe FilePath -> Maybe FilePath
+
+checkPath :: FilePath -> FilePath -> FilePath -> FilePath
+checkPath _ _ f@('/':_) = f
+checkPath h _ ('~':rx)  = h ++ rx
+checkPath _ d other     = d </> other
+
+checkMaybePath :: FilePath -> FilePath -> Maybe FilePath -> Maybe FilePath
+checkMaybePath h d (Just p) = Just $ checkPath h d p
+checkMaybePath _ _ _        = Nothing
+
+removeFiles :: [FilePath] -> IO ()
+removeFiles [] = pure ()
+removeFiles xs = forM_ xs removeIfExists
+  where removeIfExists f = do
+          exists <- doesFileExist f
+          if exists
+             then removeFile f
+             else pure ()

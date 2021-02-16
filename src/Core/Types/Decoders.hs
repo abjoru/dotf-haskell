@@ -13,6 +13,7 @@ import Core.Types.Docker
 import Core.Types.Docker.Decoders
 import Core.Types.Startpage
 
+import Core.Os
 import Core.Utils
 
 import Data.Yaml

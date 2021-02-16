@@ -40,6 +40,7 @@ data ListCmds = ListFiles ListOps
               | ListPkgs
               | ListBranches
               | ListCommitLog
+              | ListDockerServices
               deriving Show
 
 data GenCmds = GenHomepage    -- Generate homepage

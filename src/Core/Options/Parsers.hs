@@ -86,6 +86,7 @@ parserListCmd = hsubparser
   <> command "branch" (info (pure ListBranches) (progDesc "Show git branches"))
   <> command "pkgs" (info (pure ListPkgs) (progDesc "Show configured packages"))
   <> command "log" (info (pure ListCommitLog) (progDesc "Show short commit log"))
+  <> command "docker" (info (pure ListDockerServices) (progDesc "Show managed Docker services"))
   )
 
 parserGen :: Parser Command

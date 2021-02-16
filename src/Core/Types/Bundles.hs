@@ -166,6 +166,3 @@ extractPostScripts :: Env -> [FilePath]
 extractPostScripts (Env _ _ ic) = foldl coll [] $ bundles ic
   where coll acc (Bundle _ _ _ _ _ _ (Just s)) = s:acc
         coll acc _                               = acc
-
-mkCmdIn :: FilePath -> String -> String
-mkCmdIn p c = [i|bash -c "pushd #{p} ; #{c} ; popd"|]
