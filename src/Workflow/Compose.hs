@@ -13,7 +13,6 @@ import Core.Os
 import Core.Utils
 import Core.Types
 import Core.Options
-import Core.Config
 import Core.Format
 import qualified Core.Term as Term
 
@@ -75,7 +74,7 @@ genCompose cfg = do
   composePath <- getXdgDirectory XdgConfig "compose"
   outputPath  <- getXdgDirectory XdgCache "compose"
   composeData <- mkCompose composePath
-  envData     <- mkEnvFile cfg
+  envData     <- mkDockerEnvFile $ configDocker cfg
 
   -- remove the old stuff
   -- TODO backup old configs to backup dir (or drop backup feature)

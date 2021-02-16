@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: d46231ce67cc4fcba4d26cfa900236deaefb0f47e6a6e2324845a152d33f853f
+-- hash: 41aa6dd7d040793d7b99a91eb76c3bea3549f23f6c8bd435d7a066e3d915f002
 
 name:           dotf-haskell
 version:        0.1.0.0
@@ -27,16 +27,27 @@ source-repository head
 
 library
   exposed-modules:
-      Core.Config
       Core.Format
       Core.Options
       Core.Options.Parsers
       Core.Options.Types
       Core.Os
+      Core.Templates
       Core.Term
       Core.Types
+      Core.Types.Bundles
+      Core.Types.Bundles.Parsers
+      Core.Types.Bundles.Types
+      Core.Types.Decoders
+      Core.Types.Docker
+      Core.Types.Docker.Decoders
+      Core.Types.Docker.Instances
+      Core.Types.Docker.Types
       Core.Types.Instances
-      Core.Types.Parsers
+      Core.Types.Startpage
+      Core.Types.Startpage.Instances
+      Core.Types.Startpage.Parsers
+      Core.Types.Startpage.Types
       Core.Types.Types
       Core.Utils
       Workflow.Compose

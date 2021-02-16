@@ -33,7 +33,7 @@ internalGenerateVPNFiles cfg tp = do
   downloadPiaConfigs tp
   createDefaultOvpn tp
 
-  case configVpn cfg of
+  case dockerVpn =<< configDocker cfg of
     Just vpn -> createPasswordFile vpn tp
     Nothing  -> return ()
 

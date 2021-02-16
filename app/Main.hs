@@ -4,6 +4,7 @@ import Core.Os
 import Core.Types
 import Core.Format
 import Core.Options
+import Core.Templates
 
 import qualified Core.Term as Term
 
@@ -21,8 +22,6 @@ import Workflow.Compose
 import System.Directory
 import System.FilePath
 import System.Environment
-
-import Core.Config
 
 -- TODO should be able to run without pkg install yaml for all
 -- cmds except update (and perhaps some other ones)
@@ -72,14 +71,14 @@ mkConfig fp psys = do
 
 run :: PkgSystem -> Config -> IO ()
 run psys conf = do
-  args   <- parseOptions
-  plan   <- loadInstallConfig psys conf
+  args <- parseOptions
+  plan <- loadBundleConfig psys conf
 
   -- App environment
   let env = Env psys conf plan
 
   -- Check env
-  checkEnv env
+  --checkEnv env
 
   -- Workflows
   case args of 
@@ -107,7 +106,7 @@ run psys conf = do
 
     -- Generate files
     Options _ (Generate GenHomepage) -> genHomepage $ config env
-    Options _ (Generate GenCompose)   -> genCompose conf
+    Options _ (Generate GenCompose)  -> genCompose conf
     Options _ (Generate GenPiaVpn)   -> genVpnConfig env
 
     -- Compose functions

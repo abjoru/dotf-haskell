@@ -50,7 +50,7 @@ inputBootstrap = do
   ag <- dPath dataPath $ qGitPath ic dataPath
   ar <- dPath barePath $ qBarePath ic barePath
 
-  return $ Config ah ag h d ar Nothing Nothing Nothing Nothing Nothing Nothing Nothing
+  return $ Config ah ag h d ar Nothing Nothing Nothing
     where qHeadless True = "\n1. Is this a headless system? (y/" ++ style Bold "N" ++ ")"
           qHeadless _    = "\n1. Is this a headless system? (y/N)"
 

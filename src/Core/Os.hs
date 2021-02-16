@@ -1,6 +1,6 @@
-{-# LANGUAGE OverloadedStrings, DeriveGeneric, QuasiQuotes #-}
 module Core.Os where
 
+import Core.Utils
 import qualified Core.Term as Term
 
 import GHC.Generics
@@ -9,7 +9,7 @@ import Data.Aeson
 import Data.String.Interpolate (i)
 import qualified Data.ByteString.Lazy.UTF8 as BLU
 
-import Core.Types
+import Core.Types.Bundles.Types
 
 import System.Exit
 import System.Process
@@ -35,49 +35,17 @@ findPackageSystem = do
     (_, _, Just _) -> return Apt
     _              -> error "No package system found! Supported systems: pacman, apt, homebrew"
 
--- Load install config for the given package system
--- Errors if install config for package system was not found!
-loadInstallConfig :: PkgSystem -> Config -> IO InstallConfig
-loadInstallConfig ps c = do
-  rs <- decodeBundles c $ configDirectory c </> installFilename ps
+------------------
+-- Git Commands --
+------------------
 
-  case rs of
-    Right x -> return x
-    Left err -> do 
-      putStrLn [i|Error reading #{installFilename ps}!|]
-      putStrLn err
-      return $ InstallConfig "Empty" "" []
-
--- Load DotF config if defined
--- Errors if config not found or unable to load/parse!
-loadDotfConfig :: IO Config
-loadDotfConfig = do
-  cd <- getXdgDirectory XdgConfig "dotf"
-  rs <- decodeConfig $ cd </> "dotf.yaml"
-
-  case rs of
-    Right x -> return x
-    Left er -> error $ "Unable to load config: " ++ (cd </> "dotf.yaml") ++ " " ++ show er
-
--- Loads an index of various packages installed on the system.
--- This includes system packages as well as PIP python packages.
-loadOsPackages :: PkgSystem -> IO OsPkgs
-loadOsPackages ps = do
-  pkgs <- listOsPkgs ps
-  json <- readProcess "pip" ["list", "--format", "json"] []
-  OsPkgs pkgs <$> case (decode (BLU.fromString json) :: Maybe PipList) of
-    Just (PipList xs) -> return $ pipName <$> xs
-    _                 -> pure []
-  where listOsPkgs Pacman = map f . lines <$> readProcess "pacman" ["-Q"] []
-        listOsPkgs Apt    = map f . lines <$> readProcess "apt" ["list", "--installed"] []
-        listOsPkgs Homebrew = do
-          std  <- foldl co [] . lines <$> readProcess "brew" ["list", "--formula"] []
-          cask <- foldl co [] . lines <$> readProcess "brew" ["list", "--cask"] []
-          return $ std ++ cask
-
-        f line = head $ words line
-
-        co acc line = acc ++ words line
+pullRequired :: FilePath -> IO Bool
+pullRequired fp = do
+  r <- run fp "git fetch ; [ $(git rev-parse HEAD) = $(git rev-parse @{u}) ]"
+  case r of
+    ExitFailure 1 -> pure True
+    _             -> pure False
+  where run p cmd = system $ mkCmdIn p cmd
 
 --------------------
 -- Shell Commands --
@@ -93,12 +61,12 @@ checkDependency app = which app >>= check
   -- where check Nothing = Left $ "Missing " ++ app ++ " on system path!"
         -- check _       = Right ()
 
-checkEnv :: Env -> IO ()
-checkEnv (Env _ _ ic) = case pips of
-  [] -> pure ()
-  _  -> checkDependency "pip"
-  where pips = foldl coll [] $ bundles ic
-        coll acc b = acc ++ bundlePipPkgs b
+--checkEnv :: Env -> IO ()
+--checkEnv (Env _ _ ic) = case pips of
+  --[] -> pure ()
+  --_  -> checkDependency "pip"
+  --where pips = foldl coll [] $ bundles ic
+        --coll acc b = acc ++ bundlePipPkgs b
 
 -- Check if prog exists on system
 which :: String -> IO (Maybe String)

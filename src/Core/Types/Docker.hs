@@ -1,7 +1,16 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Core.Config (mkEnvFile) where
+module Core.Types.Docker (
+  module Core.Types.Docker.Types,
+  --module Core.Types.Docker.Instances,
+  --module Core.Types.Docker.Decoders,
 
-import Core.Types
+  mkDockerEnvFile
+) where
+
+import Core.Types.Docker.Types
+--import Core.Types.Docker.Instances
+--import Core.Types.Docker.Decoders
+
 import Core.Format
 
 import Data.Maybe (fromMaybe)
@@ -12,19 +21,19 @@ import qualified Data.Text as T
 import System.Directory
 import System.FilePath ((</>), isExtensionOf, takeFileName)
 
-mkEnvFile :: Config -> IO String 
-mkEnvFile cfg = do
-  envMap    <- internalLoadMaps
-  overrides <- loadSecrets $ configEnvOverride cfg
+mkDockerEnvFile :: Maybe DockerConfig -> IO String
+mkDockerEnvFile Nothing    = pure ""
+mkDockerEnvFile (Just cfg) = do
+  envMap <- loadMaps
+  overrides <- loadSecrets $ dockerEnvOverride cfg
   return $ mkConfigStr $ HML.union overrides $ HML.union (mkSecrets cfg) envMap
 
-mkSecrets :: Config -> HML.HashMap String String
-mkSecrets cfg = 
-  HML.unions [ HML.fromList $ netm $ configNetwork cfg
-             , HML.fromList $ vpnm $ configVpn cfg
-             , HML.fromList $ sysm $ configSystem cfg
-             , HML.fromList $ medm $ configMedia cfg
-             ]
+mkSecrets :: DockerConfig -> HML.HashMap String String
+mkSecrets cfg = HML.unions [ HML.fromList $ netm $ dockerNetwork cfg
+                           , HML.fromList $ vpnm $ dockerVpn cfg
+                           , HML.fromList $ sysm $ dockerSystem cfg
+                           , HML.fromList $ medm $ dockerMedia cfg
+                           ]
   where netm (Just n) = [ ("DOCKER_HOSTNAME", networkHostname n)
                         , ("LAN_NETWORK", networkLan n)
                         , ("NS1", networkNs1 n)
@@ -60,31 +69,24 @@ mkSecrets cfg =
                         ]
         medm _ = []
 
-internalLoadMaps :: IO (HML.HashMap String String)
-internalLoadMaps = do
+loadMaps :: IO (HML.HashMap String String)
+loadMaps = do
   dir <- getXdgDirectory XdgConfig "compose"
   files <- listDirectory dir
   maps <- mapM (parseWith dir) $ filter ("env" `isExtensionOf`) files
   return $ HML.unions maps
     where parseWith d f = readEnvFile $ d </> f
 
-loadSecrets :: Maybe FilePath -> IO (HML.HashMap String String) 
+loadSecrets :: Maybe FilePath -> IO (HML.HashMap String String)
 loadSecrets (Just f) = readEnvFile f
-loadSecrets Nothing  = pure HML.empty 
+loadSecrets Nothing  = pure HML.empty
 
 readEnvFile :: FilePath -> IO (HML.HashMap String String)
-readEnvFile p = do
-  content <- readFile p
+readEnvFile fp = do
+  content <- readFile fp
   return $ HML.fromList $ map split (filter f $ lines content)
-    where split :: String -> (String, String)
-          split x = case T.splitOn "=" $ T.pack x of
+    where split x = case T.splitOn "=" $ T.pack x of
                       (k:v:_) -> (T.unpack k, T.unpack v)
-                      (k:_) -> (T.unpack k, T.unpack k)
-
+                      (k:_)   -> (T.unpack k, T.unpack k)
           f ('#':_) = False
           f other   = "=" `isInfixOf` other
-
-findInDir :: (FilePath -> Bool) -> FilePath -> IO (Maybe FilePath)
-findInDir f d = do
-  ls <- listDirectory d
-  return $ find f ls

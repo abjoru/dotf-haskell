@@ -17,13 +17,13 @@ import Text.Regex.PCRE
 import Network.HostName
 
 genHomepage :: Config -> IO ()
-genHomepage c@(Config _ _ _ d _ _ (Just hp) _ _ _ _ _) = do
+genHomepage c@(Config _ _ h d _ _ (Just hp) _) = do
   dest <- getXdgDirectory XdgCache "dotf"
   host <- getHostName
-  head <- readFile $ toAbsolute c (homepageHeader hp)
-  foot <- readFile $ toAbsolute c (homepageFooter hp)
-  css  <- readFile $ toAbsolute c (homepageCss hp)
-  cont <- mkGroups host <$> decodeGroups (toAbsolute c (homepageLinks hp))
+  head <- readFile $ checkPath h d (homepageHeader hp)
+  foot <- readFile $ checkPath h d (homepageFooter hp)
+  css  <- readFile $ checkPath h d (homepageStylesheet hp)
+  cont <- mkGroups host <$> decodeHomepageGroups (checkPath h d (homepageLinks hp))
 
   -- remove the old stuff
   putStrLn [i|Checking path #{dest}...|]
