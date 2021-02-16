@@ -1,5 +1,21 @@
 {-# LANGUAGE QuasiQuotes #-}
-module Workflow.Git where
+module Workflow.Git (
+  gitRawWorkflow,
+  gitNewWorkflow,
+  gitStatusWorkflow,
+  gitDiffWorkflow,
+  gitMergeWorkflow,
+  gitWipWorkflow,
+  gitCheckoutWorflow,
+  gitAddWorkflow,
+  gitCommitWorkflow,
+  gitPushWorkflow,
+  gitPullWorkflow,
+  gitShowFilesWorkflow,
+  gitShowCommitLogWorkflow,
+  gitShowBranchWorkflow,
+  gitSquashWorkflow
+) where
 
 import Core.Types
 import Core.Format

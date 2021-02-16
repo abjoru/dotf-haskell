@@ -6,6 +6,7 @@ import Core.Format
 import Core.Utils
 
 import Data.Yaml
+import Data.List.Split (chunksOf)
 import Data.String.Interpolate (i, __i)
 
 import System.Directory (createDirectoryIfMissing, getXdgDirectory, XdgDirectory(XdgCache))
@@ -16,13 +17,13 @@ import Text.Regex.PCRE
 import Network.HostName
 
 genHomepage :: Config -> IO ()
-genHomepage c@(Config _ _ _ d _ _ (Just hp) _ _ _ _ _) = do
+genHomepage c@(Config _ _ h d _ _ (Just hp) _) = do
   dest <- getXdgDirectory XdgCache "dotf"
   host <- getHostName
-  head <- readFile $ toAbsolute c (homepageHeader hp)
-  foot <- readFile $ toAbsolute c (homepageFooter hp)
-  css  <- readFile $ toAbsolute c (homepageCss hp)
-  cont <- mkGroups host <$> decodeGroups (toAbsolute c (homepageLinks hp))
+  head <- readFile $ checkPath h d (homepageHeader hp)
+  foot <- readFile $ checkPath h d (homepageFooter hp)
+  css  <- readFile $ checkPath h d (homepageStylesheet hp)
+  cont <- mkGroups host <$> decodeHomepageGroups (checkPath h d (homepageLinks hp))
 
   -- remove the old stuff
   putStrLn [i|Checking path #{dest}...|]
@@ -41,8 +42,12 @@ genHomepage _ = pure ()
 -----------
 
 mkGroups :: HostName -> Either ParseException Groups -> String
-mkGroups host (Right (Groups gs)) = foldl (build host) "" gs
-  where build :: HostName -> String -> Group -> String
+mkGroups host (Right (Groups gs)) = foldl (assem host) "" $ chunksOf 6 gs
+  where assem h acc gx = acc ++ [__i|<div class="bookmark-container">
+                                  #{foldl (build h) "" gx}
+                                </div>|]
+
+        build :: HostName -> String -> Group -> String
         build h acc (Group n f xs) = 
           if checkHost h f
              then acc ++ mkLinks n xs

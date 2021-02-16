@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 58a340d52c7bf3f290b93a73e8a67799515e50e34a87ec0e3e54de73c9ba2125
+-- hash: 41aa6dd7d040793d7b99a91eb76c3bea3549f23f6c8bd435d7a066e3d915f002
 
 name:           dotf-haskell
 version:        0.1.0.0
@@ -27,22 +27,34 @@ source-repository head
 
 library
   exposed-modules:
-      Core.Config
       Core.Format
       Core.Options
       Core.Options.Parsers
       Core.Options.Types
       Core.Os
+      Core.Templates
       Core.Term
       Core.Types
+      Core.Types.Bundles
+      Core.Types.Bundles.Parsers
+      Core.Types.Bundles.Types
+      Core.Types.Decoders
+      Core.Types.Docker
+      Core.Types.Docker.Decoders
+      Core.Types.Docker.Instances
+      Core.Types.Docker.Types
       Core.Types.Instances
-      Core.Types.Parsers
+      Core.Types.Startpage
+      Core.Types.Startpage.Instances
+      Core.Types.Startpage.Parsers
+      Core.Types.Startpage.Types
       Core.Types.Types
       Core.Utils
       Workflow.Compose
       Workflow.Gen
       Workflow.Git
       Workflow.Input
+      Workflow.Openvpn
       Workflow.System
       Workflow.Updates
   other-modules:
@@ -58,16 +70,19 @@ library
     , extra
     , filepath
     , hostname
+    , http-conduit
     , optparse-applicative
     , pretty-terminal
     , process
     , regex-pcre
+    , split
     , string-interpolate
     , text
     , unordered-containers
     , utf8-string
     , vector
     , yaml
+    , zip-archive
   default-language: Haskell2010
 
 executable dotf
