@@ -48,11 +48,12 @@ findPackageSystem = do
 
 pullRequired :: FilePath -> IO Bool
 pullRequired fp = do
-  r <- run fp "git fetch ; [ $(git rev-parse HEAD) = $(git rev-parse @{u}) ]"
-  case r of
-    ExitFailure 1 -> pure True
-    _             -> pure False
-  where run p cmd = system $ mkCmdIn p cmd
+  exists <- doesDirectoryExist (fp </> ".git")
+  if exists
+     then run <$> runCmdIn fp "git fetch ; [ $(git rev-parse HEAD) = $(git rev-parse @{u}) ]"
+     else pure False
+  where run (ExitFailure 1) = True
+        run _               = False
 
 --------------------
 -- Shell Commands --
@@ -85,7 +86,7 @@ which' app = do
 -------------
 
 mkCmdIn :: FilePath -> String -> String
-mkCmdIn p c = [i|bash -c "pushd #{p} ; #{c} ; popd" > /dev/null 2>&1|]
+mkCmdIn p c = [i|bash -c "pushd #{p} > /dev/null 2>&1 ; #{c} ; popd > /dev/null 2>&1"|]
 
 runCmdIn :: FilePath -> String -> IO ExitCode
 runCmdIn p c = system $ mkCmdIn p c

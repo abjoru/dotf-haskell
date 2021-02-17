@@ -45,11 +45,10 @@ bootstrap = do
 
   -- Check dependencies
   gotGit <- which' "git"
-  gotPip <- which' "pip"
   gotYay <- case pkgSys of Pacman -> which' "yay"
                            _      -> pure Nothing
 
-  case catMaybes [gotGit, gotPip, gotYay] of
+  case catMaybes [gotGit, gotYay] of
     [] -> if exists
              then loadDotfConfig >>= run pkgSys
              else mkConfig cfgDir pkgSys >>= run pkgSys
