@@ -1,6 +1,6 @@
 module Core.Term where
 
-import System.Console.Pretty
+import           System.Console.Pretty
 
 -- Output info message in blue
 info :: String -> IO ()
@@ -13,7 +13,7 @@ info msg = do
 -- Output warning message in yellow
 warn :: String -> IO ()
 warn msg = do
-  inColor <- supportsPretty 
+  inColor <- supportsPretty
   if inColor
      then putStrLn (color Yellow msg)
      else putStrLn $ "WARN: " ++ msg

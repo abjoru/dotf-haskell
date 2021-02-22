@@ -20,10 +20,10 @@ genHomepage :: Config -> IO ()
 genHomepage c@(Config _ _ h d _ _ (Just hp) _) = do
   dest <- getXdgDirectory XdgCache "dotf"
   host <- getHostName
-  head <- readFile $ checkPath h d (homepageHeader hp)
-  foot <- readFile $ checkPath h d (homepageFooter hp)
-  css  <- readFile $ checkPath h d (homepageStylesheet hp)
-  cont <- mkGroups host <$> decodeHomepageGroups (checkPath h d (homepageLinks hp))
+  head <- readFile $ homepageHeader hp
+  foot <- readFile $ homepageFooter hp
+  css  <- readFile $ homepageStylesheet hp
+  cont <- mkGroups host <$> decodeHomepageGroups (homepageLinks hp)
 
   -- remove the old stuff
   putStrLn [i|Checking path #{dest}...|]

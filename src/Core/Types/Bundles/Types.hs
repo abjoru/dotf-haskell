@@ -13,18 +13,18 @@ newtype OsPackages = OsPackages [String]
   deriving Show
 
 data BundleConfig = BundleConfig
-  { name :: String
+  { name        :: String
   , description :: String
-  , bundles :: [Bundle]
+  , bundles     :: [Bundle]
   } deriving Show
 
 data Bundle = Bundle
-  { bundleName :: Name
-  , bundleHeadless :: Bool
-  , bundlePackages :: [Package]
-  , bundleGitPkgs :: [Git]
-  , bundleScript :: Maybe Script
-  , bundlePreInstall :: Maybe Script
+  { bundleName        :: Name
+  , bundleHeadless    :: Bool
+  , bundlePackages    :: [Package]
+  , bundleGitPkgs     :: [Git]
+  , bundleScript      :: Maybe Script
+  , bundlePreInstall  :: Maybe Script
   , bundlePostInstall :: Maybe Script
   } deriving Show
 
@@ -34,11 +34,11 @@ data Package = Pac Name IsAur
              deriving Show
 
 data Git = Git
-  { gitName :: Name
-  , gitUrl :: String
-  , gitBranch :: Maybe String
-  , gitSubmodules :: Bool
-  , gitInstallScript :: Maybe FilePath 
+  { gitName           :: Name
+  , gitUrl            :: String
+  , gitBranch         :: Maybe String
+  , gitSubmodules     :: Bool
+  , gitInstallScript  :: Maybe FilePath
   , gitInstallCommand :: Maybe String
-  , gitTargetPath :: Maybe FilePath
+  , gitTargetPath     :: Maybe FilePath
   } deriving Show

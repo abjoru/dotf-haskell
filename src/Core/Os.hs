@@ -1,23 +1,24 @@
-{-# LANGUAGE OverloadedStrings, QuasiQuotes #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes       #-}
 module Core.Os where
 
 --import Core.Utils
-import qualified Core.Term as Term
+import qualified Core.Term                 as Term
 
-import GHC.Generics
+import           GHC.Generics
 
-import Data.Aeson
-import Data.String.Interpolate (i)
+import           Data.Aeson
 import qualified Data.ByteString.Lazy.UTF8 as BLU
+import           Data.String.Interpolate   (i)
 
-import Core.Types.Bundles.Types
+import           Core.Types.Bundles.Types
 
-import Control.Monad
+import           Control.Monad
 
-import System.Exit
-import System.Process
-import System.Directory 
-import System.FilePath ((</>))
+import           System.Directory
+import           System.Exit
+import           System.FilePath           ((</>))
+import           System.Process
 
 --------------------
 -- Package System --
@@ -72,13 +73,13 @@ which arg = do
     ExitSuccess   -> pure $ Just arg
     ExitFailure _ -> pure Nothing
 
--- Flipped version of which. This will return the 
+-- Flipped version of which. This will return the
 -- app name if the app is not found!
 which' :: String -> IO (Maybe String)
 which' app = do
   x <- which app
   return $ case x of
-    Just _  -> Nothing 
+    Just _  -> Nothing
     Nothing -> Just app
 
 -------------

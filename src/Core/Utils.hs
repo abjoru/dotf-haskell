@@ -1,8 +1,8 @@
 module Core.Utils where
 
-import Data.Aeson (Value)
+import           Data.Aeson             (Value)
 import qualified Data.Aeson.Extra.Merge as M
-import Data.HashMap.Strict as HM
+import           Data.HashMap.Strict    as HM
 
 -- Aeson Value merge (left-bias)
 merge :: Value -> Value -> Value

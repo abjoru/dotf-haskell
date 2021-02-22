@@ -1,9 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Core.Types.Docker.Instances where
 
-import Core.Types.Docker.Types
+import           Core.Types.Docker.Types
 
-import Data.Yaml
+import           Data.Yaml
 
 instance FromJSON DockerConfig where
   parseJSON (Object o) = DockerConfig

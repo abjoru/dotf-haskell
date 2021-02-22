@@ -1,11 +1,11 @@
 {-# LANGUAGE QuasiQuotes #-}
 module Workflow.System where
 
-import Core.Types
-import Core.Options
+import           Core.Options
+import           Core.Types
 
-import Data.Foldable
-import Data.String.Interpolate (i)
+import           Data.Foldable
+import           Data.String.Interpolate (i)
 
 systemShowBundlesWorkflow :: Env -> IO ()
 systemShowBundlesWorkflow (Env _ _ (BundleConfig _ _ xs)) = forM_ xs out
