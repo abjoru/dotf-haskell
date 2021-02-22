@@ -49,16 +49,18 @@ buildCommands env op = do
   (refresh, _, install) <- partitionGitPaths env
 
   return $ mkSystemUpdateCmd env
-        ++ (mkScriptCmds $ extractPreScripts env)
+        ++ (mkScriptCmds env $ extractPreScripts env)
         ++ (mkSystemInstallCmds env $ extractPkgs env op)
         ++ (mkGitInstallCmds env install)
         ++ (mkGitUpdateCmds env refresh)
-        ++ (mkScriptCmds $ extractInstallScripts env)
-        ++ (mkScriptCmds $ extractPostScripts env)
+        ++ (mkScriptCmds env $ extractInstallScripts env)
+        ++ (mkScriptCmds env $ extractPostScripts env)
 
 -- Make executable commands for scripts
-mkScriptCmds :: [FilePath] -> [String]
-mkScriptCmds xs = ("bash " ++) <$> xs
+mkScriptCmds :: Env -> [FilePath] -> [String]
+mkScriptCmds (Env _ cfg _) xs = ("bash " ++) <$> abs xs
+  where abs :: [FilePath] -> [FilePath]
+        abs xs = checkPath (configHomeDirectory cfg) (configDirectory cfg) <$> xs
 
 -- Make Git install commands for missing packages
 mkGitInstallCmds :: Env -> [Git] -> [String]

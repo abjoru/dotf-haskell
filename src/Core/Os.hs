@@ -101,6 +101,7 @@ runScript (Just s) = system $ "sudo sh " ++ s
 type CheckPath = FilePath -> FilePath
 type CheckMaybePath = Maybe FilePath -> Maybe FilePath
 
+-- checkpath <home> <dotf> <input> <output>
 checkPath :: FilePath -> FilePath -> FilePath -> FilePath
 checkPath _ _ f@('/':_) = f
 checkPath h _ ('~':rx)  = h ++ rx
