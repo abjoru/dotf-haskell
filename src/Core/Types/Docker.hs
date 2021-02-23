@@ -7,19 +7,19 @@ module Core.Types.Docker (
   mkDockerEnvFile
 ) where
 
-import Core.Types.Docker.Types
+import           Core.Types.Docker.Types
 --import Core.Types.Docker.Instances
 --import Core.Types.Docker.Decoders
 
-import Core.Format
+import           Core.Format
 
-import Data.Maybe (fromMaybe)
-import Data.List (isInfixOf, find)
-import qualified Data.HashMap.Lazy as HML
-import qualified Data.Text as T
+import qualified Data.HashMap.Lazy       as HML
+import           Data.List               (find, isInfixOf)
+import           Data.Maybe              (fromMaybe)
+import qualified Data.Text               as T
 
-import System.Directory
-import System.FilePath ((</>), isExtensionOf, takeFileName)
+import           System.Directory
+import           System.FilePath         (isExtensionOf, takeFileName, (</>))
 
 mkDockerEnvFile :: Maybe DockerConfig -> IO String
 mkDockerEnvFile Nothing    = pure ""

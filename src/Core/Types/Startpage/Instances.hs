@@ -1,12 +1,12 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Core.Types.Startpage.Instances where
 
-import Core.Types.Startpage.Types
-import Core.Types.Startpage.Parsers
+import           Core.Types.Startpage.Parsers
+import           Core.Types.Startpage.Types
 
-import Data.Yaml
+import           Data.Yaml
 
-import qualified Data.Vector as V
+import qualified Data.Vector                  as V
 
 instance FromJSON Homepage where
   parseJSON (Object o) = Homepage

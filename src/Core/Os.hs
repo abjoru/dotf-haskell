@@ -1,23 +1,24 @@
-{-# LANGUAGE OverloadedStrings, QuasiQuotes #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes       #-}
 module Core.Os where
 
 --import Core.Utils
-import qualified Core.Term as Term
+import qualified Core.Term                 as Term
 
-import GHC.Generics
+import           GHC.Generics
 
-import Data.Aeson
-import Data.String.Interpolate (i)
+import           Data.Aeson
 import qualified Data.ByteString.Lazy.UTF8 as BLU
+import           Data.String.Interpolate   (i)
 
-import Core.Types.Bundles.Types
+import           Core.Types.Bundles.Types
 
-import Control.Monad
+import           Control.Monad
 
-import System.Exit
-import System.Process
-import System.Directory 
-import System.FilePath ((</>))
+import           System.Directory
+import           System.Exit
+import           System.FilePath           ((</>))
+import           System.Process
 
 --------------------
 -- Package System --
@@ -48,11 +49,12 @@ findPackageSystem = do
 
 pullRequired :: FilePath -> IO Bool
 pullRequired fp = do
-  r <- run fp "git fetch ; [ $(git rev-parse HEAD) = $(git rev-parse @{u}) ]"
-  case r of
-    ExitFailure 1 -> pure True
-    _             -> pure False
-  where run p cmd = system $ mkCmdIn p cmd
+  exists <- doesDirectoryExist (fp </> ".git")
+  if exists
+     then run <$> runCmdIn fp "git fetch ; [ $(git rev-parse HEAD) = $(git rev-parse @{u}) ]"
+     else pure False
+  where run (ExitFailure 1) = True
+        run _               = False
 
 --------------------
 -- Shell Commands --
@@ -71,13 +73,13 @@ which arg = do
     ExitSuccess   -> pure $ Just arg
     ExitFailure _ -> pure Nothing
 
--- Flipped version of which. This will return the 
+-- Flipped version of which. This will return the
 -- app name if the app is not found!
 which' :: String -> IO (Maybe String)
 which' app = do
   x <- which app
   return $ case x of
-    Just _  -> Nothing 
+    Just _  -> Nothing
     Nothing -> Just app
 
 -------------
@@ -85,7 +87,7 @@ which' app = do
 -------------
 
 mkCmdIn :: FilePath -> String -> String
-mkCmdIn p c = [i|bash -c "pushd #{p} ; #{c} ; popd" > /dev/null 2>&1|]
+mkCmdIn p c = [i|bash -c "pushd #{p} > /dev/null 2>&1 ; #{c} ; popd > /dev/null 2>&1"|]
 
 runCmdIn :: FilePath -> String -> IO ExitCode
 runCmdIn p c = system $ mkCmdIn p c

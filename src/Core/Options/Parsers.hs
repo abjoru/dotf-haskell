@@ -1,8 +1,8 @@
 module Core.Options.Parsers where
 
-import Core.Options.Types
+import           Core.Options.Types
 
-import Options.Applicative
+import           Options.Applicative
 
 -----------------------------
 -- Parsers for CMD options --
@@ -92,15 +92,15 @@ parserListCmd = hsubparser
 parserGen :: Parser Command
 parserGen = Generate <$> parserGenCmds
 
-parserGenCmds :: Parser GenCmds 
+parserGenCmds :: Parser GenCmds
 parserGenCmds = hsubparser
   (  command "homepage" (info (pure GenHomepage) (progDesc "Generate homepage"))
   <> command "compose" (info (pure GenCompose) (progDesc "Generate docker compose / env"))
   <> command "vpn" (info (pure GenPiaVpn) (progDesc "Generate PIA openvpn configs"))
   )
 
-parseCompose :: Parser Command 
-parseCompose = Compose <$> hsubparser 
+parseCompose :: Parser Command
+parseCompose = Compose <$> hsubparser
   (  command "up" (info parseComposeUpCmd (progDesc "Run compose up command"))
   <> command "down" (info (pure ComposeDown) (progDesc "Run compose down command"))
   <> command "restart" (info parseComposeRestartCmd (progDesc "Run compose restart command"))
@@ -113,7 +113,7 @@ parseComposeUpCmd = ComposeUp <$> parseComposeServiceArg
 parseComposePullCmd :: Parser ComposeCmds
 parseComposePullCmd = ComposePull <$> parseComposeServiceArg
 
-parseComposeRestartCmd :: Parser ComposeCmds 
+parseComposeRestartCmd :: Parser ComposeCmds
 parseComposeRestartCmd = ComposeRestart <$> parseComposeServiceArg
 
 parseComposeServiceArg :: Parser [String]

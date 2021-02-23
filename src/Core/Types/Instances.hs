@@ -1,15 +1,15 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Core.Types.Instances where
 
-import Core.Types.Types
-import Core.Types.Startpage
-import Core.Types.Startpage.Instances
-import Core.Types.Docker
-import Core.Types.Docker.Instances
+import           Core.Types.Docker
+import           Core.Types.Docker.Instances
+import           Core.Types.Startpage
+import           Core.Types.Startpage.Instances
+import           Core.Types.Types
 
-import Data.Yaml
+import           Data.Yaml
 
-import qualified Data.Vector as V
+import qualified Data.Vector                    as V
 
 instance FromJSON Config where
   parseJSON (Object o) = Config

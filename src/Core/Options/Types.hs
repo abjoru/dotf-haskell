@@ -57,5 +57,5 @@ data ComposeCmds = ComposeUp [String]
 
 data ListOps = ListOps
   { gitMode :: GitMode
-  , dir :: FilePath
+  , dir     :: FilePath
   } deriving Show

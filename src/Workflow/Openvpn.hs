@@ -1,22 +1,23 @@
-{-# LANGUAGE QuasiQuotes, OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes       #-}
 module Workflow.Openvpn (genVpnConfig) where
-  
-import Control.Monad (when)
 
-import Core.Types
-import qualified Core.Term as Term
+import           Control.Monad           (when)
 
-import Data.List (isInfixOf)
-import Data.String.Interpolate (i)
+import qualified Core.Term               as Term
+import           Core.Types
 
-import qualified Data.ByteString.Lazy as BL
+import           Data.List               (isInfixOf)
+import           Data.String.Interpolate (i)
 
-import Network.HTTP.Simple
+import qualified Data.ByteString.Lazy    as BL
 
-import Codec.Archive.Zip
+import           Network.HTTP.Simple
 
-import System.Directory
-import System.FilePath ((</>))
+import           Codec.Archive.Zip
+
+import           System.Directory
+import           System.FilePath         ((</>))
 
 genVpnConfig :: Env -> IO ()
 genVpnConfig env = do
@@ -59,7 +60,7 @@ createDefaultOvpn targetDir = do
 
 -- Create password file for PIA
 createPasswordFile :: Vpn -> FilePath -> IO ()
-createPasswordFile vpn td = 
+createPasswordFile vpn td =
   let file     = td </> "pia-creds.txt"
       contents = [vpnUsername vpn, vpnPassword vpn]
    in write file $ unlines contents

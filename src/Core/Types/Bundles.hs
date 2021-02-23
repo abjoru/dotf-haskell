@@ -1,25 +1,26 @@
-{-# LANGUAGE QuasiQuotes, OverloadedStrings #-} 
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes       #-}
 module Core.Types.Bundles (
   module Core.Types.Bundles.Types,
 
   mkUpdateCommands
 ) where
 
-import qualified Core.Term as Term
+import qualified Core.Term                as Term
 
-import Core.Os
-import Core.Format
-import Core.Types.Types
-import Core.Types.Bundles.Types
+import           Core.Format
+import           Core.Os
+import           Core.Types.Bundles.Types
+import           Core.Types.Types
 
-import Control.Monad
-import Control.Monad.Extra (partitionM)
+import           Control.Monad
+import           Control.Monad.Extra      (partitionM)
 
-import Data.String.Interpolate (i)
+import           Data.String.Interpolate  (i)
 
-import System.Process
-import System.Directory
-import System.FilePath ((</>))
+import           System.Directory
+import           System.FilePath          ((</>))
+import           System.Process
 
 loadOsPackages :: PkgSystem -> IO OsPackages
 loadOsPackages sys = do
@@ -36,7 +37,7 @@ loadOsPackages sys = do
         co acc line = acc ++ words line
 
 mkUpdateCommands :: Env -> IO [String]
-mkUpdateCommands env@(Env sys _ _) = 
+mkUpdateCommands env@(Env sys _ _) =
   buildCommands env =<< loadOsPackages sys
 
 ---------------
@@ -103,7 +104,7 @@ mkSystemInstallCmds (Env Apt _ _) existing      = mkDebianInstallCmds existing
 
 -- Make Arch install commands
 mkArchInstallCmds :: [Package] -> [String]
-mkArchInstallCmds px = 
+mkArchInstallCmds px =
   let (pac, aur) = foldl par ([], []) px
       pacCmd = mkString "sudo pacman -S " " " "" pac
       aurCmd = mkString "yay -S " " " "" aur
@@ -113,7 +114,7 @@ mkArchInstallCmds px =
 
 -- Make OSx install commands
 mkOsxInstallCmds :: [Package] -> [String]
-mkOsxInstallCmds px = 
+mkOsxInstallCmds px =
   let (brew, bHead, cask) = foldl par ([], [], []) px
       brewCmd = mkString "brew install " " " "" brew
       brewHeadCmd = mkString "brew --HEAD install " " " "" bHead
@@ -121,11 +122,11 @@ mkOsxInstallCmds px =
    in [brewCmd, brewHeadCmd, caskCmd]
   where par (a, b, c) (Brew n True _) = (a, b, n:c)
         par (a, b, c) (Brew n _ True) = (a, n:b, c)
-        par (a, b, c) (Brew n _ _)      = (n:a, b, c)
+        par (a, b, c) (Brew n _ _)    = (n:a, b, c)
 
 -- Make Debian install commands
 mkDebianInstallCmds :: [Package] -> [String]
-mkDebianInstallCmds px = 
+mkDebianInstallCmds px =
   let debs = map n px
    in [mkString "sudo apt install " " " "" debs]
   where n (Deb name) = name
@@ -155,16 +156,16 @@ extractPkgs (Env _ _ ic) (OsPackages sp) = foldl coll [] $ bundles ic
 extractInstallScripts :: Env -> [FilePath]
 extractInstallScripts (Env _ _ ic) = foldl coll [] $ bundles ic
   where coll acc (Bundle _ _ _ _ (Just s) _ _) = s:acc
-        coll acc _                               = acc
+        coll acc _                             = acc
 
 -- Extract all pre-install scripts (from all bundles)
 extractPreScripts :: Env -> [FilePath]
 extractPreScripts (Env _ _ ic) = foldl coll [] $ bundles ic
   where coll acc (Bundle _ _ _ _ _ (Just s) _) = s:acc
-        coll acc _                               = acc
+        coll acc _                             = acc
 
 -- Extract all post-install scripts (from all bundles)
 extractPostScripts :: Env -> [FilePath]
 extractPostScripts (Env _ _ ic) = foldl coll [] $ bundles ic
   where coll acc (Bundle _ _ _ _ _ _ (Just s)) = s:acc
-        coll acc _                               = acc
+        coll acc _                             = acc

@@ -17,14 +17,14 @@ module Workflow.Git (
   gitSquashWorkflow
 ) where
 
-import Core.Types
-import Core.Format
-import Core.Options
+import           Core.Format
+import           Core.Options
+import           Core.Types
 
-import Data.String.Interpolate (i)
+import           Data.String.Interpolate (i)
 
-import System.Directory
-import System.Process (system)
+import           System.Directory
+import           System.Process          (system)
 
 -------------------
 -- Git Workflows --
@@ -68,7 +68,7 @@ gitCheckoutWorflow :: Env -> DryMode -> String -> IO ()
 gitCheckoutWorflow e d b = gitExec e d [i|checkout #{b}|]
 
 gitAddWorkflow :: Env -> DryMode -> AddMode -> IO ()
-gitAddWorkflow e d AddAll = gitExec e d "add -u"
+gitAddWorkflow e d AddAll        = gitExec e d "add -u"
 gitAddWorkflow e d (AddFiles xs) = gitExec e d $ mkString "add " " " "" xs
 
 gitCommitWorkflow :: Env -> DryMode -> String -> IO ()
@@ -110,5 +110,5 @@ gith :: FilePath -> FilePath -> String -> String
 gith a b c = [i|git --git-dir=#{a} --work-tree=#{b} #{c}|]
 
 runCmd :: DryMode -> String -> IO ()
-runCmd Dry cmd = putStrLn cmd
+runCmd Dry cmd    = putStrLn cmd
 runCmd Normal cmd = system cmd >> pure ()
