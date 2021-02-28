@@ -37,7 +37,7 @@ genHomepage c@(Config _ _ h d _ _ (Just hp) _) = do
   writeFile (dest </> "homepage.html") $ head ++ cont ++ foot
   writeFile (dest </> "homepage.css") css
   putStrLn [i|Homepage written to #{dest </> "homepage.html"}|]
-genHomepage c = pure ()
+genHomepage _ = putStrLn "No homepage configuration found!"
 
 -----------
 -- Utils --
