@@ -105,7 +105,7 @@ run psys conf = do
     Options _ (List ListDockerServices)     -> composeShow
 
     -- Generate files
-    Options _ (Generate GenHomepage)        -> genHomepage $ config env
+    Options _ (Generate GenHomepage)        -> genHomepage conf
     Options _ (Generate GenCompose)         -> genCompose conf
     Options _ (Generate GenPiaVpn)          -> genVpnConfig env
 

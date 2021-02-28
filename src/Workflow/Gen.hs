@@ -1,20 +1,22 @@
 {-# LANGUAGE QuasiQuotes #-}
 module Workflow.Gen where
 
-import Core.Os
-import Core.Types
-import Core.Format
+import           Core.Format
+import           Core.Os
+import           Core.Types
 
-import Data.Yaml
-import Data.List.Split (chunksOf)
-import Data.String.Interpolate (i, __i)
+import           Data.List.Split         (chunksOf)
+import           Data.String.Interpolate (__i, i)
+import           Data.Yaml
 
-import System.Directory (createDirectoryIfMissing, getXdgDirectory, XdgDirectory(XdgCache))
-import System.FilePath ((</>))
+import           System.Directory        (XdgDirectory (XdgCache),
+                                          createDirectoryIfMissing,
+                                          getXdgDirectory)
+import           System.FilePath         ((</>))
 
-import Text.Regex.PCRE
+import           Text.Regex.PCRE
 
-import Network.HostName
+import           Network.HostName
 
 genHomepage :: Config -> IO ()
 genHomepage c@(Config _ _ h d _ _ (Just hp) _) = do
@@ -35,7 +37,7 @@ genHomepage c@(Config _ _ h d _ _ (Just hp) _) = do
   writeFile (dest </> "homepage.html") $ head ++ cont ++ foot
   writeFile (dest </> "homepage.css") css
   putStrLn [i|Homepage written to #{dest </> "homepage.html"}|]
-genHomepage _ = pure ()
+genHomepage c = pure ()
 
 -----------
 -- Utils --
@@ -48,7 +50,7 @@ mkGroups host (Right (Groups gs)) = foldl (assem host) "" $ chunksOf 6 gs
                                 </div>|]
 
         build :: HostName -> String -> Group -> String
-        build h acc (Group n f xs) = 
+        build h acc (Group n f xs) =
           if checkHost h f
              then acc ++ mkLinks n xs
              else acc
