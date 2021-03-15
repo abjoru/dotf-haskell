@@ -1,14 +1,14 @@
 {-# LANGUAGE QuasiQuotes #-}
 module Workflow.Input where
 
-import Core.Types
-import qualified Core.Term as Term
+import qualified Core.Term               as Term
+import           Core.Types
 
-import Data.String.Interpolate (i, __i)
+import           Data.String.Interpolate (__i, i)
 
-import System.Directory
-import System.FilePath ((</>))
-import System.Console.Pretty
+import           System.Console.Pretty
+import           System.Directory
+import           System.FilePath         ((</>))
 
 dBool :: String -> Bool -> IO Bool
 dBool q d = val <$> (putStrLn q >> getChar)
@@ -16,7 +16,7 @@ dBool q d = val <$> (putStrLn q >> getChar)
         val 'Y' = True
         val 'n' = False
         val 'N' = False
-        val _ = d
+        val _   = d
 
 qString :: String -> IO (Maybe String)
 qString q = val <$> (putStrLn q >> getLine)

@@ -1,25 +1,26 @@
-{-# LANGUAGE QuasiQuotes, OverloadedStrings #-} 
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes       #-}
 module Core.Types.Bundles (
   module Core.Types.Bundles.Types,
 
   mkUpdateCommands
 ) where
 
-import qualified Core.Term as Term
+import qualified Core.Term                as Term
 
-import Core.Os
-import Core.Format
-import Core.Types.Types
-import Core.Types.Bundles.Types
+import           Core.Format
+import           Core.Os
+import           Core.Types.Bundles.Types
+import           Core.Types.Types
 
-import Control.Monad
-import Control.Monad.Extra (partitionM)
+import           Control.Monad
+import           Control.Monad.Extra      (partitionM)
 
-import Data.String.Interpolate (i)
+import           Data.String.Interpolate  (i)
 
-import System.Process
-import System.Directory
-import System.FilePath ((</>))
+import           System.Directory
+import           System.FilePath          ((</>))
+import           System.Process
 
 loadOsPackages :: PkgSystem -> IO OsPackages
 loadOsPackages sys = do
@@ -36,7 +37,7 @@ loadOsPackages sys = do
         co acc line = acc ++ words line
 
 mkUpdateCommands :: Env -> IO [String]
-mkUpdateCommands env@(Env sys _ _) = 
+mkUpdateCommands env@(Env sys _ _) =
   buildCommands env =<< loadOsPackages sys
 
 ---------------
@@ -49,25 +50,27 @@ buildCommands env op = do
   (refresh, _, install) <- partitionGitPaths env
 
   return $ mkSystemUpdateCmd env
-        ++ (mkScriptCmds $ extractPreScripts env)
+        ++ (mkScriptCmds env $ extractPreScripts env)
         ++ (mkSystemInstallCmds env $ extractPkgs env op)
         ++ (mkGitInstallCmds env install)
         ++ (mkGitUpdateCmds env refresh)
-        ++ (mkScriptCmds $ extractInstallScripts env)
-        ++ (mkScriptCmds $ extractPostScripts env)
+        ++ (mkScriptCmds env $ extractInstallScripts env)
+        ++ (mkScriptCmds env $ extractPostScripts env)
 
 -- Make executable commands for scripts
-mkScriptCmds :: [FilePath] -> [String]
-mkScriptCmds xs = ("bash " ++) <$> xs
+mkScriptCmds :: Env -> [FilePath] -> [String]
+mkScriptCmds (Env _ cfg _) xs = ("bash " ++) <$> abs xs
+  where abs :: [FilePath] -> [FilePath]
+        abs xs = checkPath (configHomeDirectory cfg) (configDirectory cfg) <$> xs
 
 -- Make Git install commands for missing packages
 mkGitInstallCmds :: Env -> [Git] -> [String]
 mkGitInstallCmds (Env _ c _) gx = concat (buildCmd (configGitDirectory c) <$> gx)
   where buildCmd :: FilePath -> Git -> [String]
         buildCmd d g@(Git n u Nothing False s c _)  = [[i|git clone #{u} #{targetDir d g}|], inst s c (d </> n)]
-        buildCmd d g@(Git n u Nothing True s c _)   = [[i|git clone --resurse-submodules #{u} #{targetDir d g}|], inst s c (d </> n)]
+        buildCmd d g@(Git n u Nothing True s c _)   = [[i|git clone --recurse-submodules #{u} #{targetDir d g}|], inst s c (d </> n)]
         buildCmd d g@(Git n u (Just b) False s c _) = [[i|git clone -b #{b} #{u} #{targetDir d g}|], inst s c (d </> n)]
-        buildCmd d g@(Git n u (Just b) True s c _)  = [[i|git clone ----resurse-submodules -b #{b} #{u} #{targetDir d g}|], inst s c (d </> n)]
+        buildCmd d g@(Git n u (Just b) True s c _)  = [[i|git clone ----recurse-submodules -b #{b} #{u} #{targetDir d g}|], inst s c (d </> n)]
 
         targetDir _ (Git _ _ _ _ _ _ (Just t)) = t
         targetDir c (Git n _ _ _ _ _ _)        = c </> n
@@ -101,7 +104,7 @@ mkSystemInstallCmds (Env Apt _ _) existing      = mkDebianInstallCmds existing
 
 -- Make Arch install commands
 mkArchInstallCmds :: [Package] -> [String]
-mkArchInstallCmds px = 
+mkArchInstallCmds px =
   let (pac, aur) = foldl par ([], []) px
       pacCmd = mkString "sudo pacman -S " " " "" pac
       aurCmd = mkString "yay -S " " " "" aur
@@ -111,7 +114,7 @@ mkArchInstallCmds px =
 
 -- Make OSx install commands
 mkOsxInstallCmds :: [Package] -> [String]
-mkOsxInstallCmds px = 
+mkOsxInstallCmds px =
   let (brew, bHead, cask) = foldl par ([], [], []) px
       brewCmd = mkString "brew install " " " "" brew
       brewHeadCmd = mkString "brew --HEAD install " " " "" bHead
@@ -119,11 +122,11 @@ mkOsxInstallCmds px =
    in [brewCmd, brewHeadCmd, caskCmd]
   where par (a, b, c) (Brew n True _) = (a, b, n:c)
         par (a, b, c) (Brew n _ True) = (a, n:b, c)
-        par (a, b, c) (Brew n _ _)      = (n:a, b, c)
+        par (a, b, c) (Brew n _ _)    = (n:a, b, c)
 
 -- Make Debian install commands
 mkDebianInstallCmds :: [Package] -> [String]
-mkDebianInstallCmds px = 
+mkDebianInstallCmds px =
   let debs = map n px
    in [mkString "sudo apt install " " " "" debs]
   where n (Deb name) = name
@@ -153,19 +156,16 @@ extractPkgs (Env _ _ ic) (OsPackages sp) = foldl coll [] $ bundles ic
 extractInstallScripts :: Env -> [FilePath]
 extractInstallScripts (Env _ _ ic) = foldl coll [] $ bundles ic
   where coll acc (Bundle _ _ _ _ (Just s) _ _) = s:acc
-        coll acc _                               = acc
+        coll acc _                             = acc
 
 -- Extract all pre-install scripts (from all bundles)
 extractPreScripts :: Env -> [FilePath]
 extractPreScripts (Env _ _ ic) = foldl coll [] $ bundles ic
   where coll acc (Bundle _ _ _ _ _ (Just s) _) = s:acc
-        coll acc _                               = acc
+        coll acc _                             = acc
 
 -- Extract all post-install scripts (from all bundles)
 extractPostScripts :: Env -> [FilePath]
 extractPostScripts (Env _ _ ic) = foldl coll [] $ bundles ic
   where coll acc (Bundle _ _ _ _ _ _ (Just s)) = s:acc
-        coll acc _                               = acc
-
-mkCmdIn :: FilePath -> String -> String
-mkCmdIn p c = [i|bash -c "pushd #{p} ; #{c} ; popd"|]
+        coll acc _                             = acc

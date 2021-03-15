@@ -1,15 +1,15 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Core.Types.Startpage.Parsers where
 
-import Core.Types.Startpage.Types
+import           Core.Types.Startpage.Types
 
-import Data.Yaml
-import qualified Data.Text as T
-import qualified Data.HashMap.Strict as HM
-import qualified Data.Vector as V
+import qualified Data.HashMap.Strict        as HM
+import qualified Data.Text                  as T
+import qualified Data.Vector                as V
+import           Data.Yaml
 
 parseGroup :: Value -> Parser Group
-parseGroup (Object o) = 
+parseGroup (Object o) =
   let name   = parseJSON $ HM.lookupDefault "<unknown>" "name" o
       filter = parseJSON $ HM.lookupDefault Null "host-filter" o
       links  = parseLinks $ HM.lookup "links" o

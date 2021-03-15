@@ -14,17 +14,17 @@ module Core.Types (
   pkgName
 ) where
 
-import Core.Types.Types
-import Core.Types.Bundles
-import Core.Types.Instances
-import Core.Types.Decoders
-import Core.Types.Docker
-import Core.Types.Startpage
+import           Core.Types.Bundles
+import           Core.Types.Decoders
+import           Core.Types.Docker
+import           Core.Types.Instances
+import           Core.Types.Startpage
+import           Core.Types.Types
 
-import Data.String.Interpolate (i)
+import           Data.String.Interpolate (i)
 
-import System.Directory
-import System.FilePath ((</>))
+import           System.Directory
+import           System.FilePath         ((</>))
 
 ---------
 -- API --
@@ -55,6 +55,6 @@ loadBundleConfig sys cfg = do
         installFilename Apt      = "apt.yaml"
 
 pkgName :: Package -> Name
-pkgName (Pac n _) = n
+pkgName (Pac n _)    = n
 pkgName (Brew n _ _) = n
-pkgName (Deb n) = n
+pkgName (Deb n)      = n

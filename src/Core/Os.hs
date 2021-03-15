@@ -1,20 +1,28 @@
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes       #-}
 module Core.Os where
 
-import Core.Utils
-import qualified Core.Term as Term
+--import Core.Utils
+import qualified Core.Term                 as Term
 
-import GHC.Generics
+import           GHC.Generics
 
-import Data.Aeson
-import Data.String.Interpolate (i)
+import           Data.Aeson
 import qualified Data.ByteString.Lazy.UTF8 as BLU
+import           Data.String.Interpolate   (i)
 
-import Core.Types.Bundles.Types
+import           Core.Types.Bundles.Types
 
-import System.Exit
-import System.Process
-import System.Directory (getXdgDirectory, XdgDirectory(..))
-import System.FilePath ((</>))
+import           Control.Monad
+
+import           System.Directory
+import           System.Exit
+import           System.FilePath           ((</>))
+import           System.Process
+
+--------------------
+-- Package System --
+--------------------
 
 installFilename :: PkgSystem -> String
 installFilename Pacman   = "pacman.yaml"
@@ -41,11 +49,12 @@ findPackageSystem = do
 
 pullRequired :: FilePath -> IO Bool
 pullRequired fp = do
-  r <- run fp "git fetch ; [ $(git rev-parse HEAD) = $(git rev-parse @{u}) ]"
-  case r of
-    ExitFailure 1 -> pure True
-    _             -> pure False
-  where run p cmd = system $ mkCmdIn p cmd
+  exists <- doesDirectoryExist (fp </> ".git")
+  if exists
+     then run <$> runCmdIn fp "git fetch ; [ $(git rev-parse HEAD) = $(git rev-parse @{u}) ]"
+     else pure False
+  where run (ExitFailure 1) = True
+        run _               = False
 
 --------------------
 -- Shell Commands --
@@ -56,18 +65,6 @@ checkDependency app = which app >>= check
   where check Nothing = error $ "ERROR: Missing " ++ app ++ " on system path!"
         check _       = pure ()
 
--- checkDep :: String -> IO (Either String ())
--- checkDep app = check <$> which app
-  -- where check Nothing = Left $ "Missing " ++ app ++ " on system path!"
-        -- check _       = Right ()
-
---checkEnv :: Env -> IO ()
---checkEnv (Env _ _ ic) = case pips of
-  --[] -> pure ()
-  --_  -> checkDependency "pip"
-  --where pips = foldl coll [] $ bundles ic
-        --coll acc b = acc ++ bundlePipPkgs b
-
 -- Check if prog exists on system
 which :: String -> IO (Maybe String)
 which arg = do
@@ -76,11 +73,51 @@ which arg = do
     ExitSuccess   -> pure $ Just arg
     ExitFailure _ -> pure Nothing
 
--- Flipped version of which. This will return the 
+-- Flipped version of which. This will return the
 -- app name if the app is not found!
 which' :: String -> IO (Maybe String)
 which' app = do
   x <- which app
   return $ case x of
-    Just _  -> Nothing 
+    Just _  -> Nothing
     Nothing -> Just app
+
+-------------
+-- Scripts --
+-------------
+
+mkCmdIn :: FilePath -> String -> String
+mkCmdIn p c = [i|bash -c "pushd #{p} > /dev/null 2>&1 ; #{c} ; popd > /dev/null 2>&1"|]
+
+runCmdIn :: FilePath -> String -> IO ExitCode
+runCmdIn p c = system $ mkCmdIn p c
+
+runScript :: Maybe FilePath -> IO ExitCode
+runScript Nothing  = exitSuccess
+runScript (Just s) = system $ "sudo sh " ++ s
+
+----------------
+-- Filesystem --
+----------------
+
+type CheckPath = FilePath -> FilePath
+type CheckMaybePath = Maybe FilePath -> Maybe FilePath
+
+-- checkpath <home> <dotf> <input> <output>
+checkPath :: FilePath -> FilePath -> FilePath -> FilePath
+checkPath _ _ f@('/':_) = f
+checkPath h _ ('~':rx)  = h ++ rx
+checkPath _ d other     = d </> other
+
+checkMaybePath :: FilePath -> FilePath -> Maybe FilePath -> Maybe FilePath
+checkMaybePath h d (Just p) = Just $ checkPath h d p
+checkMaybePath _ _ _        = Nothing
+
+removeFiles :: [FilePath] -> IO ()
+removeFiles [] = pure ()
+removeFiles xs = forM_ xs removeIfExists
+  where removeIfExists f = do
+          exists <- doesFileExist f
+          if exists
+             then removeFile f
+             else pure ()

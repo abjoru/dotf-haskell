@@ -4,6 +4,7 @@ module Workflow.Compose (
   composeDown,
   composePull,
   composeRestart,
+  composeShow,
   genCompose
 ) where
 
@@ -28,6 +29,11 @@ import System.Process
 -- Compose yaml version
 composeVersion :: Text
 composeVersion = "3.8"
+
+composeShow :: IO ()
+composeShow = do
+  services <- serviceNames
+  mapM_ Term.info services
 
 -- Creating containers for input service names or all
 composeUp :: DryMode -> [String] -> IO ()

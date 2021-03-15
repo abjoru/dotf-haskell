@@ -1,12 +1,12 @@
 {-# LANGUAGE QuasiQuotes #-}
 module Core.Templates where
 
-import Core.Types
+import           Core.Types
 
-import Data.Char (toLower)
-import Data.String.Interpolate (i, __i)
+import           Data.Char               (toLower)
+import           Data.String.Interpolate (__i, i)
 
-import qualified Data.HashMap.Lazy as HML
+import qualified Data.HashMap.Lazy       as HML
 
 defaultConfig :: Config -> String
 defaultConfig (Config h gd _ _ rd _ _ _) =
@@ -107,8 +107,8 @@ defaultPkgConfig =
   \#   \# [Optional] Requires X libs
   \#   headless: false
   \#
-  \#   \# [Optional] Non-pkg applications can be installed using 
-  \#   \# the custom installer script. Default root for all 
+  \#   \# [Optional] Non-pkg applications can be installed using
+  \#   \# the custom installer script. Default root for all
   \#   \# scripts is the 'dotf-config-dir'.
   \#   script: 'scripts/internet/install.sh'
   \#
@@ -129,7 +129,7 @@ defaultPkgConfig =
   \#     aur: true
   \#
   \#   \# Applications from GIT repos can be defined here.
-  \#   \# These applicatons will be processed after the 
+  \#   \# These applicatons will be processed after the
   \#   \# packages defined in the 'packages' section.
   \#   git:
   \#   \# Some arbitrary name for the package
@@ -143,11 +143,11 @@ defaultPkgConfig =
   \#     \# branch: some-branch
   \#     \# [Optional] Recurse submodules for this repository.
   \#     \# submodules: true
-  \#     \# [Optional] Installation command. This command will be 
+  \#     \# [Optional] Installation command. This command will be
   \#     \# executed from the clone directory (i.e. local to the app)
   \#     command: 'stack install'
   \#     \# [Optional] Install script if 'command' won't cut it.
-  \#     \# Note that command takes precedence. 
+  \#     \# Note that command takes precedence.
   \#     \# install: 'script/internet/some-git-app.install.sh'
   \#     \# [Optional] Install directory of git sources
   \#     \# target: '/some/path'

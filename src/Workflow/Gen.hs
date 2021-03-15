@@ -1,29 +1,31 @@
 {-# LANGUAGE QuasiQuotes #-}
 module Workflow.Gen where
 
-import Core.Types
-import Core.Format
-import Core.Utils
+import           Core.Format
+import           Core.Os
+import           Core.Types
 
-import Data.Yaml
-import Data.List.Split (chunksOf)
-import Data.String.Interpolate (i, __i)
+import           Data.List.Split         (chunksOf)
+import           Data.String.Interpolate (__i, i)
+import           Data.Yaml
 
-import System.Directory (createDirectoryIfMissing, getXdgDirectory, XdgDirectory(XdgCache))
-import System.FilePath ((</>))
+import           System.Directory        (XdgDirectory (XdgCache),
+                                          createDirectoryIfMissing,
+                                          getXdgDirectory)
+import           System.FilePath         ((</>))
 
-import Text.Regex.PCRE
+import           Text.Regex.PCRE
 
-import Network.HostName
+import           Network.HostName
 
 genHomepage :: Config -> IO ()
 genHomepage c@(Config _ _ h d _ _ (Just hp) _) = do
   dest <- getXdgDirectory XdgCache "dotf"
   host <- getHostName
-  head <- readFile $ checkPath h d (homepageHeader hp)
-  foot <- readFile $ checkPath h d (homepageFooter hp)
-  css  <- readFile $ checkPath h d (homepageStylesheet hp)
-  cont <- mkGroups host <$> decodeHomepageGroups (checkPath h d (homepageLinks hp))
+  head <- readFile $ homepageHeader hp
+  foot <- readFile $ homepageFooter hp
+  css  <- readFile $ homepageStylesheet hp
+  cont <- mkGroups host <$> decodeHomepageGroups (homepageLinks hp)
 
   -- remove the old stuff
   putStrLn [i|Checking path #{dest}...|]
@@ -35,7 +37,7 @@ genHomepage c@(Config _ _ h d _ _ (Just hp) _) = do
   writeFile (dest </> "homepage.html") $ head ++ cont ++ foot
   writeFile (dest </> "homepage.css") css
   putStrLn [i|Homepage written to #{dest </> "homepage.html"}|]
-genHomepage _ = pure ()
+genHomepage _ = putStrLn "No homepage configuration found!"
 
 -----------
 -- Utils --
@@ -48,7 +50,7 @@ mkGroups host (Right (Groups gs)) = foldl (assem host) "" $ chunksOf 6 gs
                                 </div>|]
 
         build :: HostName -> String -> Group -> String
-        build h acc (Group n f xs) = 
+        build h acc (Group n f xs) =
           if checkHost h f
              then acc ++ mkLinks n xs
              else acc

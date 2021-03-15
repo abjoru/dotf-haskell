@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Core.Types.Docker.Decoders where
+module Core.Types.Docker.Decoders (fixDockerConfig) where
 
-import Core.Utils
+import Core.Os
 import Core.Types.Docker.Types
 import Core.Types.Docker.Instances
 
@@ -10,20 +10,13 @@ import Data.Yaml
 import System.Directory
 import System.FilePath ((</>))
 
-checkDockerConfig :: Maybe DockerConfig -> IO (Maybe DockerConfig)
-checkDockerConfig Nothing  = pure Nothing
-checkDockerConfig (Just v) = do
-  home <- getHomeDirectory
-  dotf <- getXdgDirectory XdgConfig "dotf"
-
-  let cp  = checkPath home dotf
-      cmp = checkMaybePath home dotf
-
-  return $ Just v { dockerVpn = checkVpn cp cmp $ dockerVpn v
-                  , dockerSystem = checkSystem cp $ dockerSystem v
-                  , dockerMedia = checkMedia cp $ dockerMedia v
-                  , dockerEnvOverride = cmp $ dockerEnvOverride v
-                  }
+fixDockerConfig :: CheckPath -> CheckMaybePath -> Maybe DockerConfig -> Maybe DockerConfig
+fixDockerConfig _ _ Nothing = Nothing
+fixDockerConfig cp cmp (Just dc) = Just $ dc { dockerVpn = checkVpn cp cmp $ dockerVpn dc
+                                             , dockerSystem = checkSystem cp $ dockerSystem dc
+                                             , dockerMedia = checkMedia cp $ dockerMedia dc
+                                             , dockerEnvOverride = cmp $ dockerEnvOverride dc
+                                             }
 
 checkVpn :: CheckPath -> CheckMaybePath -> Maybe Vpn -> Maybe Vpn
 checkVpn _ _ Nothing     = Nothing

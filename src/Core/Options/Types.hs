@@ -40,6 +40,7 @@ data ListCmds = ListFiles ListOps
               | ListPkgs
               | ListBranches
               | ListCommitLog
+              | ListDockerServices
               deriving Show
 
 data GenCmds = GenHomepage    -- Generate homepage
@@ -56,5 +57,5 @@ data ComposeCmds = ComposeUp [String]
 
 data ListOps = ListOps
   { gitMode :: GitMode
-  , dir :: FilePath
+  , dir     :: FilePath
   } deriving Show
