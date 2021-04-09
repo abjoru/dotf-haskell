@@ -117,8 +117,8 @@ mkOsxInstallCmds :: [Package] -> [String]
 mkOsxInstallCmds px =
   let (brew, bHead, cask) = foldl par ([], [], []) px
       brewCmd = mkString "brew install " " " "" brew
-      brewHeadCmd = mkString "brew --HEAD install " " " "" bHead
-      caskCmd = mkString "brew cask install " " " "" cask
+      brewHeadCmd = mkString "brew install --HEAD " " " "" bHead
+      caskCmd = mkString "brew install --cask " " " "" cask
    in [brewCmd, brewHeadCmd, caskCmd]
   where par (a, b, c) (Brew n True _) = (a, b, n:c)
         par (a, b, c) (Brew n _ True) = (a, n:b, c)
