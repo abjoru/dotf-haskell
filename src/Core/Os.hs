@@ -10,6 +10,7 @@ import           GHC.Generics
 import           Data.Aeson
 import qualified Data.ByteString.Lazy.UTF8 as BLU
 import           Data.String.Interpolate   (i)
+import           Data.Time.Clock           (UTCTime)
 
 import           Core.Types.Bundles.Types
 
@@ -121,3 +122,22 @@ removeFiles xs = forM_ xs removeIfExists
           if exists
              then removeFile f
              else pure ()
+
+-- Get newest modification time in some directory
+getNewestModTime :: FilePath -> IO (Maybe UTCTime)
+getNewestModTime fp = do
+  files <- listDirectory fp
+  modt <- mapM (getModificationTime . (fp </>)) files
+  return $ if null modt
+             then Nothing
+             else Just (maximum modt)
+
+-- Get newest modification time in some filtered directory
+getNewestModTimeWith :: (FilePath -> IO Bool) -> FilePath -> IO (Maybe UTCTime)
+getNewestModTimeWith pred fp = do
+  files <- listDirectory fp
+  filtered <- filterM pred files
+  modt <- mapM (getModificationTime . (fp </>)) filtered
+  return $ if null modt
+              then Nothing
+              else Just (maximum modt)

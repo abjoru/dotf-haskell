@@ -1,25 +1,39 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes       #-}
 module Core.Types.Docker (
   module Core.Types.Docker.Types,
-  --module Core.Types.Docker.Instances,
-  --module Core.Types.Docker.Decoders,
 
-  mkDockerEnvFile
+  composeVersion,
+  mkOpenVPNFile,
+  mkDockerEnvFile,
+  mkDockerComposeFile
 ) where
 
+import           GHC.Exts                (fromList)
+
+import           Control.Monad           (when)
+
+import           Core.Term               as Term
 import           Core.Types.Docker.Types
---import Core.Types.Docker.Instances
---import Core.Types.Docker.Decoders
 
 import           Core.Format
 
 import qualified Data.HashMap.Lazy       as HML
 import           Data.List               (find, isInfixOf)
 import           Data.Maybe              (fromMaybe)
+import           Data.String.Interpolate (i)
+import           Data.Text               (Text (..), unpack)
 import qualified Data.Text               as T
+import           Data.Yaml
+
+import           Codec.Archive.Zip
+import           Network.HTTP.Simple
 
 import           System.Directory
 import           System.FilePath         (isExtensionOf, takeFileName, (</>))
+
+composeVersion :: Text
+composeVersion = "3.8"
 
 mkDockerEnvFile :: Maybe DockerConfig -> IO String
 mkDockerEnvFile Nothing    = pure ""
@@ -27,6 +41,76 @@ mkDockerEnvFile (Just cfg) = do
   envMap <- loadMaps
   overrides <- loadSecrets $ dockerEnvOverride cfg
   return $ mkConfigStr $ HML.union overrides $ HML.union (mkSecrets cfg) envMap
+
+mkDockerComposeFile :: IO Value
+mkDockerComposeFile = do
+  servicePath <- getXdgDirectory XdgConfig "compose"
+  services    <- readServices servicePath
+  return $ Object $ fromList [ ("version", String composeVersion)
+                             , ("services", flatten (foldl fo [] services))
+                             ]
+  where fo acc (Right (Object o)) = acc ++ [o]
+        fo _ (Right _)            = fail "Expected Object for yml file..."
+        fo _ (Left er)            = fail $ show er
+
+        flatten = Object . HML.unions
+
+        readServices p = do
+          files <- listDirectory p
+          mapM (decodeFileEither . (p </>)) (filter ("yaml" `isExtensionOf`) files)
+
+mkOpenVPNFile :: Maybe DockerConfig -> IO ()
+mkOpenVPNFile Nothing = return ()
+mkOpenVPNFile (Just cfg) = do
+  targetDir <- getXdgDirectory XdgCache "openvpn"
+  targetExist <- doesFileExist $ targetDir </> "default.ovpn"
+
+  if targetExist
+     then Term.info [i|OpenVPN config already exist at #{targetDir </> "default.ovpn"}!|]
+     else fetchPia cfg targetDir
+
+-----------
+-- Utils --
+-----------
+
+fetchPia :: DockerConfig -> FilePath -> IO ()
+fetchPia cfg fp = do
+  createDirectoryIfMissing True fp
+  downloadPiaConfigs fp
+  createDefaultOvpn cfg fp
+
+  case dockerVpn cfg of
+    Just vpn -> createPasswordFile vpn fp
+    Nothing  -> return ()
+
+downloadPiaConfigs :: FilePath -> IO ()
+downloadPiaConfigs fp = do
+  response <- httpLBS "https://www.privateinternetaccess.com/openvpn/openvpn.zip"
+  Term.info "Downloading PIA configs from https://www.privateinternetaccess.com/openvpn/openvpn.zip"
+  let archive = toArchive $ getResponseBody response
+
+  extractFilesFromArchive [OptDestination fp] archive
+
+createDefaultOvpn :: DockerConfig -> FilePath -> IO ()
+createDefaultOvpn cfg fp = do
+  remFile $ fp </> "default.ovpn"
+  let targetFile = fromMaybe "us_florida.ovpn" $ dockerPiaLocation cfg
+  contents <- readFile $ fp </> targetFile
+  Term.info [i|Writing default.ovpn from #{targetFile}...|]
+  writeFile (fp </> "default.ovpn") $ unlines . map f $ lines contents
+    where f line | "auth-user-pass" `isInfixOf` line = "auth-user-pass /config/pia-creds.txt"
+                 | otherwise                         = line
+
+          remFile f = do
+            exists <- doesFileExist f
+            when exists $ removeFile f
+
+createPasswordFile :: Vpn -> FilePath -> IO ()
+createPasswordFile vpn fp =
+  let file = fp </> "pia-creds.txt"
+      contents = [vpnUsername vpn, vpnPassword vpn]
+   in write file $ unlines contents
+  where write f c = Term.info [i|Writing PIA credentials to #{f}...|] >> writeFile f c
 
 mkSecrets :: DockerConfig -> HML.HashMap String String
 mkSecrets cfg = HML.unions [ HML.fromList $ netm $ dockerNetwork cfg

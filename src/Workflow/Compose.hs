@@ -1,4 +1,5 @@
-{-# LANGUAGE OverloadedStrings, QuasiQuotes #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes       #-}
 module Workflow.Compose (
   composeUp,
   composeDown,
@@ -8,27 +9,23 @@ module Workflow.Compose (
   genCompose
 ) where
 
-import GHC.Exts (fromList)
+import           GHC.Exts                (fromList)
 
-import Core.Os
-import Core.Utils
-import Core.Types
-import Core.Options
-import Core.Format
-import qualified Core.Term as Term
+import           Core.Format
+import           Core.Options
+import           Core.Os
+import qualified Core.Term               as Term
+import           Core.Types
+import           Core.Utils
 
-import Data.Yaml
-import Data.Text (Text(..), unpack)
-import Data.String.Interpolate (i)
-import qualified Data.HashMap.Lazy as HML
+import qualified Data.HashMap.Lazy       as HML
+import           Data.String.Interpolate (i)
+import           Data.Text               (Text (..), unpack)
+import           Data.Yaml
 
-import System.Directory
-import System.FilePath ((</>), isExtensionOf)
-import System.Process
-
--- Compose yaml version
-composeVersion :: Text
-composeVersion = "3.8"
+import           System.Directory
+import           System.FilePath         (isExtensionOf, (</>))
+import           System.Process
 
 composeShow :: IO ()
 composeShow = do
@@ -112,9 +109,9 @@ mkCompose fp = do
 serviceNames :: IO [String]
 serviceNames = do
   composePath <- getXdgDirectory XdgConfig "compose"
-  composeData <- mkCompose composePath 
+  composeData <- mkCompose composePath
   case composeData of
     Object o -> return $ readKeys (HML.lookup "services" o)
-    _ -> return []
+    _        -> return []
   where readKeys (Just (Object o)) = map unpack $ HML.keys o
-        readKeys _ = []
+        readKeys _                 = []

@@ -29,6 +29,7 @@ library:
     - directory
     - filepath
     - text
+    - time
     - aeson
     - yaml
     - unordered-containers
