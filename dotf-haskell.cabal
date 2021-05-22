@@ -1,10 +1,10 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.33.0.
+-- This file has been generated from package.yaml by hpack version 0.34.4.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 6a7ccb9566e8d454ed798e32fe1beb450eea57ca1be0700168f9981b936abe33
+-- hash: 572cb2ea1bc5289b95bf33e585f02b88c90bf229eb95e1add3906fd377b81ccb
 
 name:           dotf-haskell
 version:        0.2.0
@@ -27,7 +27,6 @@ source-repository head
 
 library
   exposed-modules:
-      Core.Docker
       Core.Format
       Core.Options
       Core.Options.Parsers

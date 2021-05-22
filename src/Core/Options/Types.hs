@@ -53,6 +53,7 @@ data ComposeCmds = ComposeUp [String]
                  | ComposeDown
                  | ComposeRestart [String]
                  | ComposePull [String]
+                 | ComposeShow
                  deriving Show
 
 data ListOps = ListOps

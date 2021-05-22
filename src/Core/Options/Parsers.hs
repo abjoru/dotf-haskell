@@ -105,6 +105,7 @@ parseCompose = Compose <$> hsubparser
   <> command "down" (info (pure ComposeDown) (progDesc "Run compose down command"))
   <> command "restart" (info parseComposeRestartCmd (progDesc "Run compose restart command"))
   <> command "pull" (info parseComposePullCmd (progDesc "Run compose pull command"))
+  <> command "show" (info (pure ComposeShow) (progDesc "Show services"))
   )
 
 parseComposeUpCmd :: Parser ComposeCmds

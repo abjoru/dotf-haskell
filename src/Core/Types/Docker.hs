@@ -94,12 +94,14 @@ downloadPiaConfigs fp = do
 createDefaultOvpn :: DockerConfig -> FilePath -> IO ()
 createDefaultOvpn cfg fp = do
   remFile $ fp </> "default.ovpn"
-  let targetFile = fromMaybe "us_florida.ovpn" $ dockerPiaLocation cfg
-  contents <- readFile $ fp </> targetFile
-  Term.info [i|Writing default.ovpn from #{targetFile}...|]
+  contents <- readFile $ fp </> baseCfg cfg
+  Term.info [i|Writing default.ovpn from #{baseCfg cfg}...|]
   writeFile (fp </> "default.ovpn") $ unlines . map f $ lines contents
     where f line | "auth-user-pass" `isInfixOf` line = "auth-user-pass /config/pia-creds.txt"
                  | otherwise                         = line
+
+          baseCfg :: DockerConfig -> String
+          baseCfg c = fromMaybe "us_florida.ovpn" $ vpnConfig =<< dockerVpn c
 
           remFile f = do
             exists <- doesFileExist f

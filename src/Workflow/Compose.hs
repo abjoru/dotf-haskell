@@ -5,8 +5,7 @@ module Workflow.Compose (
   composeDown,
   composePull,
   composeRestart,
-  composeShow,
-  genCompose
+  composeShow
 ) where
 
 import           GHC.Exts                (fromList)
@@ -72,44 +71,9 @@ execCompose dm cmd = do
     (Normal, Just exe) -> system [i|#{exe} --project-directory #{composeP} #{cmd}|] >> pure ()
     (_, Nothing)  -> Term.err "Unable to find docker-compose. Please make sure it's intalled!"
 
-genCompose :: Config -> IO ()
-genCompose cfg = do
-  composePath <- getXdgDirectory XdgConfig "compose"
-  outputPath  <- getXdgDirectory XdgCache "compose"
-  composeData <- mkCompose composePath
-  envData     <- mkDockerEnvFile $ configDocker cfg
-
-  -- remove the old stuff
-  -- TODO backup old configs to backup dir (or drop backup feature)
-  Term.info [i|Checking output path #{outputPath}..|]
-  createDirectoryIfMissing True outputPath
-  removeFiles [outputPath </> "docker-compose.yml", outputPath </> ".env"]
-
-  -- write the new stuff
-  Term.info "Assembling new docker-compose and env files.."
-  writeFile (outputPath </> ".env") envData
-  encodeFile (outputPath </> "docker-compose.yml") composeData
-
-mkCompose :: FilePath -> IO Value
-mkCompose fp = do
-  services <- decServices fp
-  return $ Object $ fromList [ ("version", String composeVersion)
-                             , ("services", flatten (foldl fo [] services))
-                             ]
-  where fo acc (Right (Object o)) = acc ++ [o]
-        fo _ (Right _)            = fail "Expected Object for yaml file..."
-        fo _ (Left ex)            = fail $ show ex
-
-        flatten = Object . HML.unions
-
-        decServices p = do
-          files <- listDirectory p
-          mapM (decodeFileEither . (p </>)) (filter ("yaml" `isExtensionOf`) files)
-
 serviceNames :: IO [String]
 serviceNames = do
-  composePath <- getXdgDirectory XdgConfig "compose"
-  composeData <- mkCompose composePath
+  composeData <- mkDockerComposeFile
   case composeData of
     Object o -> return $ readKeys (HML.lookup "services" o)
     _        -> return []

@@ -56,7 +56,7 @@ defaultConfig (Config h gd _ _ rd _ _ _) =
   \#    password: 'secret'
   \#    username: 'me'
   \#    provider: 'CUSTOM'
-  \#    config: 'us_loc'
+  \#    config: 'us_loc.ovpn'
   \#    wireguard-dir: 'some/wireguard/dir'
 
   \#  system:

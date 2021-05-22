@@ -107,13 +107,14 @@ run psys conf = do
     -- Generate files
     Options _ (Generate GenHomepage)        -> genHomepage conf
     Options _ (Generate GenCompose)         -> genCompose conf
-    Options _ (Generate GenPiaVpn)          -> genVpnConfig env
+    Options _ (Generate GenPiaVpn)          -> genOpenVPN conf
 
     -- Compose functions
     Options d (Compose (ComposeUp xs))      -> composeUp d xs
     Options d (Compose ComposeDown)         -> composeDown d
     Options d (Compose (ComposePull xs))    -> composePull d xs
     Options d (Compose (ComposeRestart xs)) -> composeRestart d xs
+    Options d (Compose ComposeShow)         -> composeShow
 
     -- Debug fallthrough
     --xs -> print "Not Implemented!" >> print xs

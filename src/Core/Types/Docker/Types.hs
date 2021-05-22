@@ -6,7 +6,6 @@ data DockerConfig = DockerConfig
   , dockerSystem      :: Maybe System
   , dockerMedia       :: Maybe Media
   , dockerEnvOverride :: Maybe FilePath
-  , dockerPiaLocation :: Maybe String
   } deriving Show
 
 data Network = Network

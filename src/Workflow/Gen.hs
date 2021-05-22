@@ -3,15 +3,14 @@ module Workflow.Gen where
 
 import           Core.Format
 import           Core.Os
+import qualified Core.Term               as Term
 import           Core.Types
 
 import           Data.List.Split         (chunksOf)
 import           Data.String.Interpolate (__i, i)
 import           Data.Yaml
 
-import           System.Directory        (XdgDirectory (XdgCache),
-                                          createDirectoryIfMissing,
-                                          getXdgDirectory)
+import           System.Directory
 import           System.FilePath         ((</>))
 
 import           Text.Regex.PCRE
@@ -38,6 +37,32 @@ genHomepage c@(Config _ _ h d _ _ (Just hp) _) = do
   writeFile (dest </> "homepage.css") css
   putStrLn [i|Homepage written to #{dest </> "homepage.html"}|]
 genHomepage _ = putStrLn "No homepage configuration found!"
+
+genCompose :: Config -> IO ()
+genCompose cfg = do
+  composePath <- getXdgDirectory XdgConfig "compose"
+  outputPath  <- getXdgDirectory XdgCache "compose"
+  composeData <- mkDockerComposeFile
+  envData     <- mkDockerEnvFile $ configDocker cfg
+
+  -- remove old stuff
+  Term.info [i|Checking output path #{outputPath}...|]
+  createDirectoryIfMissing True outputPath
+  removeFiles [outputPath </> "docker-compose.yml", outputPath </> ".env"]
+
+  -- write new stuff
+  Term.info "Assembling new compose and env files..."
+  writeFile (outputPath </> ".env") envData
+  encodeFile (outputPath </> "docker-compose.yml") composeData
+
+genOpenVPN :: Config -> IO ()
+genOpenVPN cfg = do
+  targetDir <- getXdgDirectory XdgCache "openvpn"
+  targetExist <- doesFileExist $ targetDir </> "default.ovpn"
+
+  if targetExist
+     then Term.info [i|OpenVPN config already exist at #{targetDir </> "default.ovpn"}!|]
+     else mkOpenVPNFile $ configDocker cfg
 
 -----------
 -- Utils --

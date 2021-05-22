@@ -12,7 +12,6 @@ instance FromJSON DockerConfig where
     <*> o .:? "system"
     <*> o .:? "media"
     <*> o .:? "env-overrides"
-    <*> o .:? "pia-ovpn-file"
   parseJSON _ = fail "Expected object type for DockerConfig"
 
 instance FromJSON Network where
