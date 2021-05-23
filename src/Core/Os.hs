@@ -19,6 +19,8 @@ import           Control.Monad
 import           System.Directory
 import           System.Exit
 import           System.FilePath           ((</>))
+import           System.Posix.Types        (GroupID, UserID)
+import           System.Posix.User
 import           System.Process
 
 --------------------
@@ -141,3 +143,23 @@ getNewestModTimeWith pred fp = do
   return $ if null modt
               then Nothing
               else Just (maximum modt)
+
+---------------------
+-- User Management --
+---------------------
+
+getCurrentUserId :: IO UserID
+getCurrentUserId = getLoginName >>= getUserId
+
+getCurrentGroupId :: IO GroupID
+getCurrentGroupId = getLoginName >>= getGroupId
+
+getUserId :: String -> IO UserID
+getUserId uname = do
+  userEntry <- getUserEntryForName uname
+  return (userID userEntry)
+
+getGroupId :: String -> IO GroupID
+getGroupId uname = do
+  userEntry <- getUserEntryForName uname
+  return (userGroupID userEntry)

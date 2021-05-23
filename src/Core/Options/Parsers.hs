@@ -65,6 +65,19 @@ parserNew = New <$> fmap check parserUpstreamOpt
   where check "" = Nothing
         check xa = Just xa
 
+parserGenComposeCmd :: Parser GenCmds
+parserGenComposeCmd = GenCompose <$> fmap check parserUserOpt
+  where check "" = Nothing
+        check xa = Just xa
+
+parserUserOpt :: Parser String
+parserUserOpt = strOption (  long "uname"
+                          <> short 'u'
+                          <> metavar "USER_NAME"
+                          <> value ""
+                          <> help "User to map in compose config"
+                          )
+
 -- Parser for the 'upstream' option for the `New` command
 parserUpstreamOpt :: Parser String
 parserUpstreamOpt = strOption (  long "upstream"
@@ -95,7 +108,7 @@ parserGen = Generate <$> parserGenCmds
 parserGenCmds :: Parser GenCmds
 parserGenCmds = hsubparser
   (  command "homepage" (info (pure GenHomepage) (progDesc "Generate homepage"))
-  <> command "compose" (info (pure GenCompose) (progDesc "Generate docker compose / env"))
+  <> command "compose" (info parserGenComposeCmd (progDesc "Generate docker compose / env"))
   <> command "vpn" (info (pure GenPiaVpn) (progDesc "Generate PIA openvpn configs"))
   )
 

@@ -31,16 +31,19 @@ import           Network.HTTP.Simple
 
 import           System.Directory
 import           System.FilePath         (isExtensionOf, takeFileName, (</>))
+import           System.Posix.User
 
 composeVersion :: Text
 composeVersion = "3.8"
 
-mkDockerEnvFile :: Maybe DockerConfig -> IO String
-mkDockerEnvFile Nothing    = pure ""
-mkDockerEnvFile (Just cfg) = do
-  envMap <- loadMaps
+mkDockerEnvFile :: UserEntry -> Maybe DockerConfig -> IO String
+mkDockerEnvFile _ Nothing      = pure ""
+mkDockerEnvFile usr (Just cfg) = do
+  envMap <- fmap (addUser usr . addGroup usr) loadMaps
   overrides <- loadSecrets $ dockerEnvOverride cfg
   return $ mkConfigStr $ HML.union overrides $ HML.union (mkSecrets cfg) envMap
+    where addUser u = HML.insert "PUID" $ show (userID u)
+          addGroup u = HML.insert "PGID" $ show (userGroupID u)
 
 mkDockerComposeFile :: IO Value
 mkDockerComposeFile = do

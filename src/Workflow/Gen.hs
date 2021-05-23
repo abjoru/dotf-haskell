@@ -12,6 +12,7 @@ import           Data.Yaml
 
 import           System.Directory
 import           System.FilePath         ((</>))
+import           System.Posix.User
 
 import           Text.Regex.PCRE
 
@@ -38,12 +39,13 @@ genHomepage c@(Config _ _ h d _ _ (Just hp) _) = do
   putStrLn [i|Homepage written to #{dest </> "homepage.html"}|]
 genHomepage _ = putStrLn "No homepage configuration found!"
 
-genCompose :: Config -> IO ()
-genCompose cfg = do
+genCompose :: Config -> Maybe String -> IO ()
+genCompose cfg maybeUser = do
   composePath <- getXdgDirectory XdgConfig "compose"
   outputPath  <- getXdgDirectory XdgCache "compose"
   composeData <- mkDockerComposeFile
-  envData     <- mkDockerEnvFile $ configDocker cfg
+  userEntry   <- findUserEntry maybeUser
+  envData     <- mkDockerEnvFile userEntry $ configDocker cfg
 
   -- remove old stuff
   Term.info [i|Checking output path #{outputPath}...|]
@@ -54,6 +56,8 @@ genCompose cfg = do
   Term.info "Assembling new compose and env files..."
   writeFile (outputPath </> ".env") envData
   encodeFile (outputPath </> "docker-compose.yml") composeData
+  where findUserEntry (Just u) = getUserEntryForName u
+        findUserEntry Nothing  = getLoginName >>= getUserEntryForName
 
 genOpenVPN :: Config -> IO ()
 genOpenVPN cfg = do

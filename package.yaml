@@ -28,6 +28,7 @@ library:
     - process
     - directory
     - filepath
+    - unix
     - text
     - time
     - aeson

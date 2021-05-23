@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 572cb2ea1bc5289b95bf33e585f02b88c90bf229eb95e1add3906fd377b81ccb
+-- hash: dbb0b9df08c25fe7c16d4f7f179b85d193911c49ffd637baac0bda2e32d81696
 
 name:           dotf-haskell
 version:        0.2.0
@@ -79,6 +79,7 @@ library
     , string-interpolate
     , text
     , time
+    , unix
     , unordered-containers
     , utf8-string
     , vector

@@ -106,7 +106,7 @@ run psys conf = do
 
     -- Generate files
     Options _ (Generate GenHomepage)        -> genHomepage conf
-    Options _ (Generate GenCompose)         -> genCompose conf
+    Options _ (Generate (GenCompose u))     -> genCompose conf u
     Options _ (Generate GenPiaVpn)          -> genOpenVPN conf
 
     -- Compose functions
