@@ -67,8 +67,8 @@ execCompose dm cmd = do
   maybeExe <- which "docker-compose"
   composeP <- getXdgDirectory XdgCache "compose"
   case (dm, maybeExe) of
-    (Dry, Just exe) -> putStrLn [i|#{exe} --project-directory #{composeP} #{cmd}|]
-    (Normal, Just exe) -> system [i|#{exe} --project-directory #{composeP} #{cmd}|] >> pure ()
+    (Dry, Just exe) -> putStrLn [i|sudo #{exe} --project-directory #{composeP} #{cmd}|]
+    (Normal, Just exe) -> system [i|sudo #{exe} --project-directory #{composeP} #{cmd}|] >> pure ()
     (_, Nothing)  -> Term.err "Unable to find docker-compose. Please make sure it's intalled!"
 
 serviceNames :: IO [String]

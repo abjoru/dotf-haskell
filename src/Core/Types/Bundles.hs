@@ -146,7 +146,10 @@ partitionGitPaths (Env _ c ic) =
 
 -- Extract all packages that has not yet been installed on the system
 extractPkgs :: Env -> OsPackages -> [Package]
-extractPkgs (Env _ _ ic) (OsPackages sp) = foldl coll [] $ bundles ic
+extractPkgs (Env _ c ic) (OsPackages sp) =
+  let headless = configHeadless c
+      activeB  = filter (\x -> headless == bundleHeadless x) (bundles ic)
+   in foldl coll [] activeB
   where coll acc b = acc ++ filter newPkg (bundlePackages b)
         newPkg (Pac n _)    = n `notElem` sp
         newPkg (Brew n _ _) = n `notElem` sp
