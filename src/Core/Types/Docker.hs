@@ -13,6 +13,7 @@ import           GHC.Exts                (fromList)
 
 import           Control.Monad           (when)
 
+import           Core.Os
 import           Core.Term               as Term
 import           Core.Types.Docker.Types
 
@@ -63,7 +64,7 @@ mkDockerComposeFile = do
           mapM (decodeFileEither . (p </>)) (filter ("yaml" `isExtensionOf`) files)
 
 mkOpenVPNFile :: Maybe DockerConfig -> IO ()
-mkOpenVPNFile Nothing = return ()
+mkOpenVPNFile Nothing = Term.warn "No docker config defined in dotf.yaml!" >> return ()
 mkOpenVPNFile (Just cfg) = do
   targetDir <- getXdgDirectory XdgCache "openvpn"
   targetExist <- doesFileExist $ targetDir </> "default.ovpn"
@@ -80,11 +81,11 @@ fetchPia :: DockerConfig -> FilePath -> IO ()
 fetchPia cfg fp = do
   createDirectoryIfMissing True fp
   downloadPiaConfigs fp
-  createDefaultOvpn cfg fp
+  createDefaultOvpn (dockerVpn cfg) fp
+  ovpnFiles <- listOvpnFiles fp
 
-  case dockerVpn cfg of
-    Just vpn -> createPasswordFile vpn fp
-    Nothing  -> return ()
+  let fOvpn = filter ((fp </> "default.ovpn") /=) ovpnFiles
+   in removeFiles fOvpn
 
 downloadPiaConfigs :: FilePath -> IO ()
 downloadPiaConfigs fp = do
@@ -94,28 +95,25 @@ downloadPiaConfigs fp = do
 
   extractFilesFromArchive [OptDestination fp] archive
 
-createDefaultOvpn :: DockerConfig -> FilePath -> IO ()
-createDefaultOvpn cfg fp = do
-  remFile $ fp </> "default.ovpn"
-  contents <- readFile $ fp </> baseCfg cfg
-  Term.info [i|Writing default.ovpn from #{baseCfg cfg}...|]
-  writeFile (fp </> "default.ovpn") $ unlines . map f $ lines contents
-    where f line | "auth-user-pass" `isInfixOf` line = "auth-user-pass /config/pia-creds.txt"
-                 | otherwise                         = line
+createDefaultOvpn :: Maybe Vpn -> FilePath -> IO ()
+createDefaultOvpn (Just vpn) fp = do
+  renameFile (fp </> baseCfg vpn) (fp </> "default.ovpn")
+    where baseCfg v = fromMaybe "us_florida.ovpn" $ vpnConfig v
+createDefaultOvpn' Nothing _ = do
+  Term.warn "Missing VPN configuration in dotf.yaml!"
+  pure ()
 
-          baseCfg :: DockerConfig -> String
-          baseCfg c = fromMaybe "us_florida.ovpn" $ vpnConfig =<< dockerVpn c
+listOvpnFiles :: FilePath -> IO [FilePath]
+listOvpnFiles fp = do
+  files <- listDirectory fp
+  return $ filter ("ovpn" `isExtensionOf`) files
 
-          remFile f = do
-            exists <- doesFileExist f
-            when exists $ removeFile f
-
-createPasswordFile :: Vpn -> FilePath -> IO ()
-createPasswordFile vpn fp =
-  let file = fp </> "pia-creds.txt"
-      contents = [vpnUsername vpn, vpnPassword vpn]
-   in write file $ unlines contents
-  where write f c = Term.info [i|Writing PIA credentials to #{f}...|] >> writeFile f c
+--createPasswordFile :: Vpn -> FilePath -> IO ()
+--createPasswordFile vpn fp =
+  --let file = fp </> "pia-creds.txt"
+      --contents = [vpnUsername vpn, vpnPassword vpn]
+   --in write file $ unlines contents
+  --where write f c = Term.info [i|Writing PIA credentials to #{f}...|] >> writeFile f c
 
 mkSecrets :: DockerConfig -> HML.HashMap String String
 mkSecrets cfg = HML.unions [ HML.fromList $ netm $ dockerNetwork cfg

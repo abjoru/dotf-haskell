@@ -133,10 +133,8 @@ mkDebianInstallCmds px =
 
 -- Partition 'upd' -> 'noop' -> 'new'
 partitionGitPaths :: Env -> IO ([Git], [Git], [Git])
-partitionGitPaths (Env _ c ic) =
-  let headless = configHeadless c
-      activeB  = filter (\x -> headless == bundleHeadless x) (bundles ic)
-      pkgs = foldl (\a b -> a ++ bundleGitPkgs b) [] activeB
+partitionGitPaths env@(Env _ c ic) =
+  let pkgs = foldl (\a b -> a ++ bundleGitPkgs b) [] $ activeBundles env
    in foldM par ([], [], []) pkgs
   where par (a, b, e) g = do
           upd <- pullRequired $ configGitDirectory c </> gitName g
@@ -148,10 +146,8 @@ partitionGitPaths (Env _ c ic) =
 
 -- Extract all packages that has not yet been installed on the system
 extractPkgs :: Env -> OsPackages -> [Package]
-extractPkgs (Env _ c ic) (OsPackages sp) =
-  let headless = configHeadless c
-      activeB  = filter (\x -> headless == bundleHeadless x) (bundles ic)
-   in foldl coll [] activeB
+extractPkgs env (OsPackages sp) =
+  foldl coll [] $ activeBundles env
   where coll acc b = acc ++ filter newPkg (bundlePackages b)
         newPkg (Pac n _)    = n `notElem` sp
         newPkg (Brew n _ _) = n `notElem` sp
@@ -159,18 +155,22 @@ extractPkgs (Env _ c ic) (OsPackages sp) =
 
 -- Extract all install scripts (from all bundles)
 extractInstallScripts :: Env -> [FilePath]
-extractInstallScripts (Env _ _ ic) = foldl coll [] $ bundles ic
+extractInstallScripts env = foldl coll [] $ activeBundles env
   where coll acc (Bundle _ _ _ _ (Just s) _ _) = s:acc
         coll acc _                             = acc
 
 -- Extract all pre-install scripts (from all bundles)
 extractPreScripts :: Env -> [FilePath]
-extractPreScripts (Env _ _ ic) = foldl coll [] $ bundles ic
+extractPreScripts env = foldl coll [] $ activeBundles env
   where coll acc (Bundle _ _ _ _ _ (Just s) _) = s:acc
         coll acc _                             = acc
 
 -- Extract all post-install scripts (from all bundles)
 extractPostScripts :: Env -> [FilePath]
-extractPostScripts (Env _ _ ic) = foldl coll [] $ bundles ic
+extractPostScripts env = foldl coll [] $ activeBundles env
   where coll acc (Bundle _ _ _ _ _ _ (Just s)) = s:acc
         coll acc _                             = acc
+
+activeBundles :: Env -> [Bundle]
+activeBundles (Env _ c ic) = filter f $ bundles ic
+  where f x = configHeadless c == bundleHeadless x
