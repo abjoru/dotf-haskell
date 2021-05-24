@@ -134,7 +134,9 @@ mkDebianInstallCmds px =
 -- Partition 'upd' -> 'noop' -> 'new'
 partitionGitPaths :: Env -> IO ([Git], [Git], [Git])
 partitionGitPaths (Env _ c ic) =
-  let pkgs = foldl (\a b -> a ++ bundleGitPkgs b) [] $ bundles ic
+  let headless = configHeadless c
+      activeB  = filter (\x -> headless == bundleHeadless x) (bundles ic)
+      pkgs = foldl (\a b -> a ++ bundleGitPkgs b) [] activeB
    in foldM par ([], [], []) pkgs
   where par (a, b, e) g = do
           upd <- pullRequired $ configGitDirectory c </> gitName g
