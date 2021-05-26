@@ -11,7 +11,7 @@ module Core.Types.Docker (
 
 import           GHC.Exts                (fromList)
 
-import           Control.Monad           (when)
+import           Control.Monad           (filterM, forM_, when)
 
 import           Core.Os
 import           Core.Term               as Term
@@ -20,7 +20,7 @@ import           Core.Types.Docker.Types
 import           Core.Format
 
 import qualified Data.HashMap.Lazy       as HML
-import           Data.List               (find, isInfixOf)
+import           Data.List               (find, isInfixOf, isPrefixOf)
 import           Data.Maybe              (fromMaybe)
 import           Data.String.Interpolate (i)
 import           Data.Text               (Text (..), unpack)
@@ -31,7 +31,7 @@ import           Codec.Archive.Zip
 import           Network.HTTP.Simple
 
 import           System.Directory
-import           System.FilePath         (isExtensionOf, takeFileName, (</>))
+import           System.FilePath         (isExtensionOf, takeBaseName, (</>))
 import           System.Posix.User
 
 composeVersion :: Text
@@ -81,11 +81,15 @@ fetchPia :: DockerConfig -> FilePath -> IO ()
 fetchPia cfg fp = do
   createDirectoryIfMissing True fp
   downloadPiaConfigs fp
-  createDefaultOvpn (dockerVpn cfg) fp
-  ovpnFiles <- listOvpnFiles fp
+  createTransmissionOvpn (dockerVpn cfg) fp
+  createNzbGetOvpnFolder fp
 
-  let fOvpn = filter ((fp </> "default.ovpn") /=) ovpnFiles
-   in removeFiles fOvpn
+  --createDefaultOvpn (dockerVpn cfg) fp
+  --ovpnFiles <- listOvpnFiles fp
+
+  --let fOvpn = map toAbs $ filter ("default.ovpn" /=) ovpnFiles
+   --in removeFiles fOvpn
+  --where toAbs p = fp </> p
 
 downloadPiaConfigs :: FilePath -> IO ()
 downloadPiaConfigs fp = do
@@ -95,25 +99,38 @@ downloadPiaConfigs fp = do
 
   extractFilesFromArchive [OptDestination fp] archive
 
+createTransmissionOvpn :: Maybe Vpn -> FilePath -> IO ()
+createTransmissionOvpn Nothing _ = Term.warn "Missing docker config in dotf.yaml!"
+createTransmissionOvpn (Just vpn) fp = do
+  let sourceFile = fromMaybe "us_florida.ovpn" $ vpnConfig vpn
+  contents <- readFile $ fp </> sourceFile
+  Term.info [i|Writing transmission.ovpn from #{sourceFile}...|]
+  writeFile (fp </> "transmission.ovpn") $ unlines . map f $ lines contents
+    where f line | "auth-user-pass" `isInfixOf` line = "auth-user-pass /config/openvpn-credentials.txt"
+            | otherwise                              = line
+
+createNzbGetOvpnFolder :: FilePath -> IO ()
+createNzbGetOvpnFolder fp = do
+  createDirectoryIfMissing True $ fp </> "nzbget"
+  allFiles <- listFiles fp
+  Term.info [i|allFiles=#{allFiles}|]
+
+  let ovpnFiles = filter (\x -> isPrefixOf "us_" $ takeBaseName x) allFiles
+      otherFiles = filter (not . isExtensionOf "ovpn") allFiles
+      all = ovpnFiles ++ otherFiles
+   in forM_ all $ cpy fp (fp </> "nzbget")
+  where cpy src dest f = copyFile (src </> f) (dest </> f)
+
 createDefaultOvpn :: Maybe Vpn -> FilePath -> IO ()
 createDefaultOvpn (Just vpn) fp = do
   renameFile (fp </> baseCfg vpn) (fp </> "default.ovpn")
     where baseCfg v = fromMaybe "us_florida.ovpn" $ vpnConfig v
-createDefaultOvpn' Nothing _ = do
-  Term.warn "Missing VPN configuration in dotf.yaml!"
-  pure ()
+createDefaultOvpn _ _ = Term.warn "Missing VPN configuration in dotf.yaml!" >> pure ()
 
 listOvpnFiles :: FilePath -> IO [FilePath]
 listOvpnFiles fp = do
   files <- listDirectory fp
   return $ filter ("ovpn" `isExtensionOf`) files
-
---createPasswordFile :: Vpn -> FilePath -> IO ()
---createPasswordFile vpn fp =
-  --let file = fp </> "pia-creds.txt"
-      --contents = [vpnUsername vpn, vpnPassword vpn]
-   --in write file $ unlines contents
-  --where write f c = Term.info [i|Writing PIA credentials to #{f}...|] >> writeFile f c
 
 mkSecrets :: DockerConfig -> HML.HashMap String String
 mkSecrets cfg = HML.unions [ HML.fromList $ netm $ dockerNetwork cfg

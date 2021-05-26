@@ -125,6 +125,11 @@ removeFiles xs = forM_ xs removeIfExists
              then removeFile f
              else pure ()
 
+listFiles :: FilePath -> IO [FilePath]
+listFiles fp = do
+  xs <- listDirectory fp
+  filterM (\f -> doesFileExist $ fp </> f) xs
+
 -- Get newest modification time in some directory
 getNewestModTime :: FilePath -> IO (Maybe UTCTime)
 getNewestModTime fp = do
